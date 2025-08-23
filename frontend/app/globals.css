@@ -1,0 +1,134 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+}
+
+/* 포켓몬 테마 배경 */
+.pokemon-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.pokemon-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.problem-card {
+  background: linear-gradient(145deg, #f0f8ff, #e6f3ff);
+  border: 3px solid #4a90e2;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+}
+
+/* 버튼 스타일 */
+.btn-pokemon {
+  @apply bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform transition-all duration-200 hover:scale-105 hover:shadow-xl active:scale-95;
+}
+
+.btn-answer {
+  @apply bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold py-2 px-4 rounded-lg shadow-md transform transition-all duration-200 hover:scale-105 active:scale-95;
+}
+
+.btn-hint {
+  @apply bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold py-2 px-4 rounded-lg shadow-md transform transition-all duration-200 hover:scale-105 active:scale-95;
+}
+
+/* 입력 필드 스타일 */
+.input-pokemon {
+  @apply w-full p-4 text-2xl text-center border-3 border-blue-300 rounded-xl focus:border-blue-500 focus:outline-none bg-white shadow-inner font-bold;
+}
+
+/* 애니메이션 클래스 */
+.animate-correct {
+  animation: correct 0.6s ease-out;
+}
+
+.animate-wrong {
+  animation: wrong 0.6s ease-out;
+}
+
+@keyframes correct {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.1); background-color: #10b981; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wrong {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-10px); background-color: #ef4444; }
+  50% { transform: translateX(10px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+/* 포켓몬 카드 호버 효과 */
+.pokemon-card-hover {
+  @apply transform transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer;
+}
+
+/* 로딩 스피너 */
+.loading-pokeball {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, #ff0000 50%, #ffffff 50%);
+  animation: spin 1s linear infinite;
+  position: relative;
+}
+
+.loading-pokeball::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: #ffffff;
+  border-radius: 50%;
+  border: 3px solid #000000;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
