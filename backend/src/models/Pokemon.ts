@@ -1,7 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { Pokemon as PokemonType } from '../../../shared/types';
 
-interface PokemonDocument extends PokemonType, Document {}
+interface PokemonDocument extends Omit<PokemonType, 'id'>, Document {
+  id: number;
+}
 
 const PokemonSchema = new Schema<PokemonDocument>({
   id: { type: Number, required: true, unique: true },

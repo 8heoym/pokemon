@@ -1,7 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { User as UserType } from '../../../shared/types';
 
-interface UserDocument extends UserType, Document {}
+interface UserDocument extends Omit<UserType, 'id'>, Document {
+  id: string;
+}
 
 const UserSchema = new Schema<UserDocument>({
   id: { type: String, required: true, unique: true },

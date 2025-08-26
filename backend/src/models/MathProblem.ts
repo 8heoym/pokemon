@@ -1,7 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { MathProblem as MathProblemType } from '../../../shared/types';
 
-interface MathProblemDocument extends MathProblemType, Document {}
+interface MathProblemDocument extends Omit<MathProblemType, 'id'>, Document {
+  id: string;
+}
 
 const MathProblemSchema = new Schema<MathProblemDocument>({
   id: { type: String, required: true, unique: true },

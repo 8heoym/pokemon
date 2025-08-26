@@ -1,20 +1,18 @@
 import { Request, Response } from 'express';
 import { AIProblemGenerator } from '../services/AIProblemGenerator';
-import { LearningAnalysisService } from '../services/LearningAnalysisService';
-import { PokemonService } from '../services/PokemonService';
-import { MathProblemModel } from '../models/MathProblem';
-import { UserAnswerModel } from '../models/UserAnswer';
+import { SupabasePokemonService } from '../services/SupabasePokemonService';
+import { SupabaseGameService } from '../services/SupabaseGameService';
 import { v4 as uuidv4 } from 'uuid';
 
 export class ProblemController {
   private aiGenerator: AIProblemGenerator;
-  private learningService: LearningAnalysisService;
-  private pokemonService: PokemonService;
+  private pokemonService: SupabasePokemonService;
+  private gameService: SupabaseGameService;
 
   constructor() {
     this.aiGenerator = new AIProblemGenerator();
-    this.learningService = new LearningAnalysisService();
-    this.pokemonService = new PokemonService();
+    this.pokemonService = new SupabasePokemonService();
+    this.gameService = new SupabaseGameService();
   }
 
   async generateProblem(req: Request, res: Response) {
@@ -195,7 +193,7 @@ export class ProblemController {
       const progressSummary = await this.learningService.getUserProgressSummary(userId);
       
       // 구구단별 상세 분석
-      const tableAnalyses = {};
+      const tableAnalyses: { [key: number]: any } = {};
       for (let table = 2; table <= 9; table++) {
         tableAnalyses[table] = await this.learningService.analyzeLearningProgress(
           userId,

@@ -23,18 +23,22 @@ export class AIProblemGenerator {
     userAnalysis?: LearningAnalysis
   ): Promise<MathProblem> {
     try {
-      const prompt = this.createProblemPrompt(pokemon, multiplicationTable, difficulty, userAnalysis);
+      // Mock problem generation for now - will implement AI later
+      const factors = [2, 3, 4, 5, 6, 7, 8, 9];
+      const randomFactor = factors[Math.floor(Math.random() * factors.length)];
+      const answer = multiplicationTable * randomFactor;
       
-      const response = await this.anthropic.messages.create({
-        model: 'claude-3-sonnet-20240229',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      });
-
-      const problemData = this.parseProblemResponse(response.content[0].text);
+      const problemData = {
+        story: `${pokemon.koreanName}가 ${multiplicationTable}마리씩 ${randomFactor}그룹에 있습니다. 모두 몇 마리일까요?`,
+        hint: `${multiplicationTable} × ${randomFactor}을 계산해보세요!`,
+        equation: `${multiplicationTable} × ${randomFactor}`,
+        answer: answer,
+        visualElements: {
+          pokemonCount: multiplicationTable,
+          itemsPerPokemon: randomFactor,
+          totalItems: answer
+        }
+      };
       
       return {
         id: uuidv4(),
@@ -45,7 +49,7 @@ export class AIProblemGenerator {
       };
       
     } catch (error) {
-      console.error('AI 문제 생성 실패:', error);
+      console.error('문제 생성 실패:', error);
       throw error;
     }
   }
@@ -157,16 +161,9 @@ JSON 형태로만 응답해주세요.`;
 응답은 "오류유형: 설명" 형식으로 50자 이내로 해주세요.
       `;
 
-      const response = await this.anthropic.messages.create({
-        model: 'claude-3-sonnet-20240229',
-        max_tokens: 200,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      });
-
-      return response.content[0].text.trim();
+      // Mock analysis for now - will implement AI later
+      const errorTypes = ['계산 실수: 단순한 계산 오류', '개념적 오류: 곱셈 이해 부족', '기억 오류: 구구단 실수'];
+      return errorTypes[Math.floor(Math.random() * errorTypes.length)];
       
     } catch (error) {
       console.error('오답 분석 실패:', error);
@@ -190,16 +187,14 @@ JSON 형태로만 응답해주세요.`;
 시각적 설명이나 단계별 설명을 포함하세요.
       `;
 
-      const response = await this.anthropic.messages.create({
-        model: 'claude-3-sonnet-20240229',
-        max_tokens: 200,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      });
-
-      return response.content[0].text.trim();
+      // Mock hint generation for now - will implement AI later
+      const hints = [
+        '손가락으로 세어보세요!',
+        '더 작은 숫자부터 시작해보세요.',
+        '그림을 그려서 생각해보세요!',
+        '덧셈으로 바꿔서 계산해보세요.'
+      ];
+      return hints[Math.floor(Math.random() * hints.length)];
       
     } catch (error) {
       console.error('힌트 생성 실패:', error);

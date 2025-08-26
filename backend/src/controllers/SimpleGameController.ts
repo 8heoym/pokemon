@@ -1,0 +1,114 @@
+import { Request, Response } from 'express';
+import { SupabaseGameService } from '../services/SupabaseGameService';
+
+export class SimpleGameController {
+  private gameService: SupabaseGameService;
+
+  constructor() {
+    this.gameService = new SupabaseGameService();
+  }
+
+  async createUser(req: Request, res: Response) {
+    try {
+      const { nickname } = req.body;
+
+      if (!nickname || nickname.trim().length === 0) {
+        return res.status(400).json({ error: '닉네임이 필요합니다.' });
+      }
+
+      if (nickname.trim().length > 20) {
+        return res.status(400).json({ error: '닉네임은 20자 이하여야 합니다.' });
+      }
+
+      const user = await this.gameService.createUser(nickname);
+      
+      res.json(user);
+    } catch (error) {
+      console.error('사용자 생성 실패:', error);
+      res.status(500).json({ error: '사용자 생성 중 오류가 발생했습니다.' });
+    }
+  }
+
+  async getUser(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      
+      // UUID 형식인지 확인 (간단한 방법)
+      const isUUID = userId.length === 36 && userId.includes('-');
+      
+      let user;
+      if (isUUID) {
+        user = await this.gameService.getUserById(userId);
+      } else {
+        // 닉네임으로 조회
+        user = await this.gameService.getUserByNickname(decodeURIComponent(userId));
+      }
+      
+      if (!user) {
+        return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      console.error('사용자 조회 실패:', error);
+      res.status(500).json({ error: '사용자 조회 중 오류가 발생했습니다.' });
+    }
+  }
+
+  async catchPokemon(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      const { pokemonId } = req.body;
+
+      if (!pokemonId) {
+        return res.status(400).json({ error: '포켓몬 ID가 필요합니다.' });
+      }
+
+      const result = await this.gameService.catchPokemon(userId, pokemonId);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('포켓몬 잡기 실패:', error);
+      res.status(500).json({ error: '포켓몬 잡기 중 오류가 발생했습니다.' });
+    }
+  }
+
+  async getPokedex(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      
+      const pokedex = await this.gameService.getPokedex(userId);
+      
+      res.json(pokedex);
+    } catch (error) {
+      console.error('포켓몬 도감 조회 실패:', error);
+      res.status(500).json({ error: '포켓몬 도감 조회 중 오류가 발생했습니다.' });
+    }
+  }
+
+  async getUserStats(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      
+      const stats = await this.gameService.getUserStats(userId);
+      
+      res.json(stats);
+    } catch (error) {
+      console.error('사용자 통계 조회 실패:', error);
+      res.status(500).json({ error: '사용자 통계 조회 중 오류가 발생했습니다.' });
+    }
+  }
+
+  async getLeaderboard(req: Request, res: Response) {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      const leaderboard = await this.gameService.getLeaderboard(limit);
+      
+      res.json(leaderboard);
+    } catch (error) {
+      console.error('리더보드 조회 실패:', error);
+      res.status(500).json({ error: '리더보드 조회 중 오류가 발생했습니다.' });
+    }
+  }
+}

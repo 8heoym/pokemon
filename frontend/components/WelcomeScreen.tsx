@@ -35,7 +35,7 @@ export default function WelcomeScreen({
       await onCreateUser(nickname.trim());
     } else {
       if (userId.trim().length === 0) {
-        alert('사용자 ID를 입력해주세요!');
+        alert('닉네임을 입력해주세요!');
         return;
       }
       await onLoadUser(userId.trim());
@@ -129,18 +129,19 @@ export default function WelcomeScreen({
           ) : (
             <div>
               <label className="block text-left font-bold text-gray-700 mb-2">
-                사용자 ID
+                닉네임
               </label>
               <input
                 type="text"
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
-                placeholder="사용자 ID를 입력하세요"
+                placeholder="이전에 사용한 닉네임을 입력하세요"
                 className="input-pokemon"
                 disabled={isLoading}
+                maxLength={20}
               />
               <p className="text-sm text-gray-500 mt-1 text-left">
-                💾 이전에 저장된 게임을 불러오려면 ID를 입력하세요
+                🔍 이전에 생성한 닉네임을 입력하면 계속 플레이할 수 있어요
               </p>
             </div>
           )}

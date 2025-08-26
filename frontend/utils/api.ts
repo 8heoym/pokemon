@@ -53,7 +53,7 @@ export const problemAPI = {
     api.post('/problems/generate', { userId, multiplicationTable, difficulty }),
 
   submit: (userId: string, problemId: string, userAnswer: number, timeSpent: number, hintsUsed: number = 0) =>
-    api.post('/problems/submit', { userId, problemId, userAnswer, timeSpent, hintsUsed }),
+    api.post('/problems/submit', { userId, problemId, answer: userAnswer, timeSpent, hintsUsed }),
 
   getHint: (problemId: string, userId: string) =>
     api.get(`/problems/${problemId}/hint/${userId}`),

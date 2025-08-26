@@ -1,0 +1,399 @@
+import puppeteer from 'puppeteer';
+import { Pokemon } from '../../../shared/types';
+import fs from 'fs/promises';
+import path from 'path';
+
+export class ImprovedPokemonCrawler {
+  private browser: any = null;
+  private cacheFile = path.join(__dirname, '../../cache/pokemon_cache.json');
+  
+  async initialize() {
+    this.browser = await puppeteer.launch({
+      headless: "new", // 새로운 헤드리스 모드 사용
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu'
+      ]
+    });
+  }
+
+  // 캐시에서 기존 데이터 로드
+  async loadCache(): Promise<Pokemon[]> {
+    try {
+      const cacheData = await fs.readFile(this.cacheFile, 'utf-8');
+      console.log('캐시에서 기존 포켓몬 데이터 로드');
+      return JSON.parse(cacheData);
+    } catch (error) {
+      console.log('캐시 파일이 없음, 새로 시작');
+      return [];
+    }
+  }
+
+  // 캐시에 데이터 저장
+  async saveCache(pokemonList: Pokemon[]): Promise<void> {
+    try {
+      await fs.mkdir(path.dirname(this.cacheFile), { recursive: true });
+      await fs.writeFile(this.cacheFile, JSON.stringify(pokemonList, null, 2));
+      console.log(`${pokemonList.length}마리 포켓몬 데이터 캐시 저장 완료`);
+    } catch (error) {
+      console.error('캐시 저장 실패:', error);
+    }
+  }
+
+  // DB에서 기존 포켓몬 ID 목록 가져오기
+  async getExistingPokemonIds(): Promise<Set<number>> {
+    try {
+      const { supabase } = await import('../config/supabase');
+      const { data, error } = await supabase
+        .from('pokemon')
+        .select('id');
+
+      if (error) throw error;
+
+      const existingIds = new Set(data?.map((p: any) => p.id) || []);
+      console.log(`DB에 기존 포켓몬 ${existingIds.size}마리 확인`);
+      return existingIds;
+    } catch (error) {
+      console.error('기존 포켓몬 ID 조회 실패:', error);
+      return new Set();
+    }
+  }
+
+  // 누락된 포켓몬만 선별적 크롤링
+  async crawlMissingPokemon(): Promise<Pokemon[]> {
+    if (!this.browser) {
+      await this.initialize();
+    }
+
+    console.log('개선된 포켓몬 크롤링 시작...');
+    const page = await this.browser.newPage();
+    
+    // 네트워크 최적화
+    await page.setRequestInterception(true);
+    page.on('request', (req: any) => {
+      if (req.resourceType() === 'image' || req.resourceType() === 'stylesheet' || req.resourceType() === 'font') {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
+
+    let allPokemonList: Pokemon[] = [];
+    
+    try {
+      // 기존 캐시 및 DB 데이터 로드
+      const cachedPokemon = await this.loadCache();
+      const existingIds = await this.getExistingPokemonIds();
+      
+      // 캐시에서 이미 수집된 데이터 활용
+      const validCachedPokemon = cachedPokemon.filter(p => p.id > 0 && p.id <= 1025);
+      console.log(`캐시에서 ${validCachedPokemon.length}마리 로드`);
+      
+      allPokemonList = [...validCachedPokemon];
+      const collectedIds = new Set(allPokemonList.map(p => p.id));
+
+      // 누락된 포켓몬 ID 계산
+      const missingIds: number[] = [];
+      for (let i = 1; i <= 1025; i++) {
+        if (!existingIds.has(i) && !collectedIds.has(i)) {
+          missingIds.push(i);
+        }
+      }
+
+      console.log(`누락된 포켓몬: ${missingIds.length}마리 (ID: ${missingIds.slice(0, 10).join(', ')}...)`);
+
+      if (missingIds.length === 0) {
+        console.log('모든 포켓몬이 이미 수집됨');
+        return allPokemonList;
+      }
+
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      
+      await page.goto('https://pokemonkorea.co.kr/pokedex', { 
+        waitUntil: 'networkidle0',
+        timeout: 90000 
+      });
+
+      console.log('페이지 로드 완료, 포켓몬 요소 찾는 중...');
+      
+      // 포켓몬 리스트 컨테이너 대기
+      await page.waitForSelector('#pokedexlist', { timeout: 30000 });
+      console.log('포켓몬 리스트 컨테이너 찾음');
+      
+      const selector = '#pokedexlist a';
+      await page.waitForSelector(selector, { timeout: 15000 });
+      console.log('포켓몬 카드 요소 찾음');
+      
+      let previousPokemonCount = 0;
+      let pokemonCount = 0;
+      let scrollAttempts = 0;
+      let consecutiveFailures = 0;
+      let staleCount = 0;
+      
+      // 개선된 설정값
+      const maxScrollAttempts = 500; // 크게 증가
+      const maxConsecutiveFailures = 25; // 여유있게 설정
+      const maxStaleCount = 50; // 같은 개수가 지속되는 한계
+      const saveInterval = 50; // 50회마다 중간 저장
+
+      console.log('개선된 스크롤링 시작...');
+      
+      while (scrollAttempts < maxScrollAttempts && consecutiveFailures < maxConsecutiveFailures) {
+        pokemonCount = await page.$$(selector).then((items: any[]) => items.length);
+        
+        console.log(`스크롤 ${scrollAttempts + 1}회 - 로드된 포켓몬: ${pokemonCount}개`);
+        
+        if (pokemonCount === previousPokemonCount) {
+          consecutiveFailures++;
+          staleCount++;
+          console.log(`정체 상태: 연속실패 ${consecutiveFailures}회, 정체 ${staleCount}회`);
+          
+          // 정체 상태가 길면 더 긴 대기
+          if (staleCount > 10) {
+            await page.waitForTimeout(8000); // 8초 대기
+          }
+        } else {
+          consecutiveFailures = 0;
+          staleCount = 0;
+          previousPokemonCount = pokemonCount;
+        }
+        
+        // 목표 개수 달성 체크
+        if (pokemonCount >= 1025) {
+          console.log('목표 포켓몬 개수 1025개 달성!');
+          break;
+        }
+        
+        // 더 부드러운 스크롤
+        await page.evaluate(() => {
+          window.scrollBy({
+            top: window.innerHeight * 0.8,
+            behavior: 'smooth'
+          });
+        });
+        
+        // 적응형 대기 시간
+        let waitTime = 4000;
+        if (consecutiveFailures > 5) waitTime = 7000;
+        if (consecutiveFailures > 15) waitTime = 10000;
+        
+        await page.waitForTimeout(waitTime);
+        scrollAttempts++;
+        
+        // 진행상황 출력 (더 자주)
+        if (scrollAttempts % 25 === 0) {
+          console.log(`진행상황: ${pokemonCount}/1025 (${((pokemonCount/1025)*100).toFixed(1)}%)`);
+        }
+
+        // 중간 저장 (데이터 손실 방지)
+        if (scrollAttempts % saveInterval === 0) {
+          console.log('중간 데이터 수집 및 저장...');
+          const intermediatePokemon = await this.extractPokemonData(page, selector);
+          if (intermediatePokemon.length > allPokemonList.length) {
+            allPokemonList = intermediatePokemon;
+            await this.saveCache(allPokemonList);
+          }
+        }
+      }
+
+      console.log(`스크롤링 완료. 최종 ${pokemonCount}개 포켓몬 발견`);
+
+      // 최종 데이터 추출
+      const finalPokemonData = await this.extractPokemonData(page, selector);
+      
+      console.log(`최종 데이터 추출 완료: ${finalPokemonData.length}개`);
+      
+      // 캐시 업데이트
+      if (finalPokemonData.length > 0) {
+        await this.saveCache(finalPokemonData);
+      }
+
+      return finalPokemonData;
+
+    } catch (error) {
+      console.error('개선된 크롤링 중 오류 발생:', error);
+      throw error;
+    } finally {
+      await page.close();
+    }
+  }
+
+  // 포켓몬 데이터 추출 로직 분리
+  private async extractPokemonData(page: any, selector: string): Promise<Pokemon[]> {
+    const pokemonData = await page.$$eval(selector, (items: any[]) => {
+      return items.map((item: any, index: number) => {
+        // 포켓몬 번호 추출 (No.0001 형식에서)
+        let number = 0;
+        const textContent = item.textContent || '';
+        const numberMatch = textContent.match(/No\.(\d+)/);
+        if (numberMatch) {
+          number = parseInt(numberMatch[1]);
+        }
+        
+        // 번호를 찾지 못하면 인덱스 기반으로 설정
+        if (number === 0) {
+          number = index + 1;
+        }
+        
+        // 포켓몬 이름 추출
+        let name = '';
+        const lines = textContent.split('\n').map((line: string) => line.trim()).filter((line: string) => line);
+        
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].startsWith('No.') && i + 1 < lines.length) {
+            const nextLine = lines[i + 1];
+            if (/[가-힣]/.test(nextLine) && !nextLine.includes('타입')) {
+              name = nextLine;
+              break;
+            }
+          }
+        }
+        
+        // 이미지 URL 추출
+        let imageUrl = '';
+        const imageElement = item.querySelector('img');
+        if (imageElement && imageElement.src) {
+          imageUrl = imageElement.src;
+        }
+        
+        return {
+          id: number,
+          koreanName: name || `포켓몬 ${number}`,
+          imageUrl: imageUrl
+        };
+      });
+    });
+
+    // 중복 제거 및 유효성 검사
+    const validPokemon = pokemonData
+      .filter((pokemon: any) => pokemon.id > 0 && pokemon.id <= 1025)
+      .reduce((acc: any[], current: any) => {
+        const existing = acc.find((p: any) => p.id === current.id);
+        if (!existing) {
+          acc.push(current);
+        }
+        return acc;
+      }, [] as any[]);
+
+    // 구구단별 지역 및 희귀도 할당
+    const pokemonList: Pokemon[] = [];
+    for (const pokemon of validPokemon) {
+      const enrichedPokemon: Pokemon = {
+        ...pokemon,
+        name: this.getEnglishName(pokemon.id),
+        region: this.assignRegion(pokemon.id),
+        multiplicationTable: this.assignMultiplicationTable(pokemon.id),
+        rarity: this.assignRarity(pokemon.id),
+        characteristics: this.getCharacteristics(pokemon.id)
+      };
+      
+      pokemonList.push(enrichedPokemon);
+    }
+
+    // ID 순으로 정렬
+    pokemonList.sort((a, b) => a.id - b.id);
+    
+    return pokemonList;
+  }
+
+  private assignRegion(pokemonId: number): string {
+    const regions = [
+      { name: '관동지방', range: [1, 151] },
+      { name: '성도지방', range: [152, 251] },
+      { name: '호연지방', range: [252, 386] },
+      { name: '신오지방', range: [387, 493] },
+      { name: '하나지방', range: [494, 649] },
+      { name: '칼로스지방', range: [650, 721] },
+      { name: '알로라지방', range: [722, 809] },
+      { name: '가라르지방', range: [810, 905] },
+      { name: '팔데아지방', range: [906, 1025] }
+    ];
+
+    for (const region of regions) {
+      if (pokemonId >= region.range[0] && pokemonId <= region.range[1]) {
+        return region.name;
+      }
+    }
+    return '관동지방';
+  }
+  
+  private assignMultiplicationTable(pokemonId: number): number {
+    const tables = [2, 3, 4, 5, 6, 7, 8, 9];
+    return tables[pokemonId % 8];
+  }
+  
+  private assignRarity(pokemonId: number): 'common' | 'uncommon' | 'rare' | 'legendary' {
+    const legendaries = new Set([
+      144, 145, 146, 150, 151, // 1세대
+      243, 244, 245, 249, 250, 251, // 2세대  
+      377, 378, 379, 380, 381, 382, 383, 384, 385, 386, // 3세대
+      480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493 // 4세대
+    ]);
+    
+    if (legendaries.has(pokemonId)) return 'legendary';
+    
+    const rarityValue = pokemonId % 10;
+    if (rarityValue <= 5) return 'common';
+    if (rarityValue <= 7) return 'uncommon';
+    return 'rare';
+  }
+  
+  private getEnglishName(pokemonId: number): string {
+    const nameMap: { [key: number]: string } = {
+      1: 'Bulbasaur', 2: 'Ivysaur', 3: 'Venusaur',
+      4: 'Charmander', 5: 'Charmeleon', 6: 'Charizard',
+      7: 'Squirtle', 8: 'Wartortle', 9: 'Blastoise',
+      25: 'Pikachu', 26: 'Raichu', 39: 'Jigglypuff',
+      52: 'Meowth', 104: 'Cubone', 113: 'Chansey',
+      131: 'Lapras', 133: 'Eevee', 150: 'Mewtwo', 151: 'Mew'
+    };
+    return nameMap[pokemonId] || `Pokemon${pokemonId}`;
+  }
+  
+  private getCharacteristics(pokemonId: number): string[] {
+    const characteristics = [
+      '친근함', '활발함', '온순함', '용감함', '영리함', 
+      '재빠름', '강함', '귀여움', '신비로움', '충실함'
+    ];
+    
+    const selectedCharacteristics: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const index: number = (pokemonId + i) % characteristics.length;
+      const characteristic: string = characteristics[index];
+      if (!selectedCharacteristics.includes(characteristic)) {
+        selectedCharacteristics.push(characteristic);
+      }
+    }
+    
+    return selectedCharacteristics.slice(0, 3);
+  }
+
+  async close() {
+    if (this.browser) {
+      await this.browser.close();
+    }
+  }
+}
+
+// 스크립트 직접 실행 시 크롤링 수행
+if (require.main === module) {
+  (async () => {
+    const crawler = new ImprovedPokemonCrawler();
+    try {
+      const pokemonList = await crawler.crawlMissingPokemon();
+      console.log('개선된 크롤링 완료!');
+      console.log(`총 수집: ${pokemonList.length}마리`);
+      console.log('처음 5마리:', pokemonList.slice(0, 5));
+      console.log('마지막 5마리:', pokemonList.slice(-5));
+    } catch (error) {
+      console.error('개선된 크롤링 실패:', error);
+    } finally {
+      await crawler.close();
+    }
+  })();
+}

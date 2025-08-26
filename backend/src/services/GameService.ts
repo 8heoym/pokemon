@@ -195,7 +195,7 @@ export class GameService {
   }
 
   private calculateExperienceGain(rarity: string): number {
-    const experienceMap = {
+    const experienceMap: { [key: string]: number } = {
       common: 10,
       uncommon: 20,
       rare: 50,

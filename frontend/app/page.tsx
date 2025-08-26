@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from '@/types';
 import { userAPI } from '@/utils/api';
 import WelcomeScreen from '@/components/WelcomeScreen';
@@ -55,20 +55,22 @@ export default function HomePage() {
   };
 
   // 컴포넌트 마운트 시 로컬 스토리지에서 사용자 정보 확인
-  useState(() => {
-    const savedUser = localStorage.getItem('pokemonMathUser');
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        setCurrentUser(user);
-        // 최신 정보로 업데이트
-        handleLoadUser(user.id);
-      } catch (error) {
-        console.error('Failed to parse saved user:', error);
-        localStorage.removeItem('pokemonMathUser');
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('pokemonMathUser');
+      if (savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          setCurrentUser(user);
+          // 최신 정보로 업데이트
+          handleLoadUser(user.id);
+        } catch (error) {
+          console.error('Failed to parse saved user:', error);
+          localStorage.removeItem('pokemonMathUser');
+        }
       }
     }
-  });
+  }, []);
 
   if (isLoading) {
     return <LoadingScreen message="포켓몬 세계로 입장하는 중..." />;

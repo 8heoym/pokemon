@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
-import { GameService } from '../services/GameService';
+import { SupabaseGameService } from '../services/SupabaseGameService';
 
 export class GameController {
-  private gameService: GameService;
+  private gameService: SupabaseGameService;
 
   constructor() {
-    this.gameService = new GameService();
+    this.gameService = new SupabaseGameService();
   }
 
   async createUser(req: Request, res: Response) {

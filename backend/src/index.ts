@@ -1,10 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { connectDB } from './config/database';
-import { PokemonService } from './services/PokemonService';
-import { ProblemController } from './controllers/ProblemController';
-import { GameController } from './controllers/GameController';
+// import { connectDB } from './config/database'; // MongoDB는 사용하지 않음
+import { SupabasePokemonService } from './services/SupabasePokemonService';
+import { SimpleProblemController } from './controllers/SimpleProblemController';
+import { SimpleGameController } from './controllers/SimpleGameController';
 
 // 환경변수 로드
 dotenv.config();
@@ -17,9 +17,9 @@ app.use(cors());
 app.use(express.json());
 
 // 서비스 및 컨트롤러 인스턴스
-const pokemonService = new PokemonService();
-const problemController = new ProblemController();
-const gameController = new GameController();
+const pokemonService = new SupabasePokemonService();
+const problemController = new SimpleProblemController();
+const gameController = new SimpleGameController();
 
 // 기본 라우트
 app.get('/', (req, res) => {
@@ -132,8 +132,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // 서버 시작
 async function startServer() {
   try {
-    // MongoDB 연결
-    await connectDB();
+    // MongoDB 연결 (임시로 주석처리 - 데모용)
+    // await connectDB();
+    console.log('MongoDB 연결 건너뜀 (데모 모드)');
     
     // 서버 시작
     app.listen(PORT, () => {
