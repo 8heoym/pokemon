@@ -1,15 +1,5 @@
 [build]
 builder = "nixpacks"
-buildCommand = "cd backend && npm run build"
 
 [deploy]
-startCommand = "cd backend && npm start"
-restartPolicyType = "always"
-
-[[services]]
-name = "pokemon-backend"
-source = "backend"
-
-[services.variables]
-PORT = "3001"
-NODE_ENV = "production"
+startCommand = "npm start"
