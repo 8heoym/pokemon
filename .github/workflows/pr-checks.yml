@@ -1,0 +1,151 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+          cd .. && npm ci
+
+      - name: Run backend linting
+        working-directory: ./backend
+        run: npm run lint || true
+
+      - name: Run frontend linting
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Check backend TypeScript
+        working-directory: ./backend
+        run: npm run build
+
+      - name: Check frontend TypeScript
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Run tests with coverage
+        run: |
+          cd backend && npm run test:coverage
+          cd ../frontend && npm run test:coverage
+
+      - name: Comment PR with coverage
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage
+          message: |
+            ## 📊 Test Coverage Report
+            
+            ### Backend Coverage
+            - Lines: Check backend/coverage/lcov-report/index.html
+            
+            ### Frontend Coverage  
+            - Lines: Check frontend/coverage/lcov-report/index.html
+            
+            Make sure to maintain good test coverage! 🎯
+
+  size-check:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build and analyze bundle
+        working-directory: ./frontend
+        run: |
+          npm run build
+          npx next-bundle-analyzer || true
+
+      - name: Comment bundle size
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: bundle-size
+          message: |
+            ## 📦 Bundle Size Analysis
+            
+            Frontend build completed successfully!
+            Check the build output for any size warnings or optimizations.
+
+  performance-test:
+    name: Performance Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+          cd .. && npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
+      - name: Run performance tests
+        run: npx playwright test --grep "@performance"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+  accessibility-check:
+    name: Accessibility Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd frontend && npm ci
+          cd .. && npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
+      - name: Run accessibility tests
+        run: npx playwright test --grep "@accessibility"
