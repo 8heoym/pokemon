@@ -88,10 +88,13 @@ export class SimpleProblemController {
         // 사용된 문제는 캐시에서 제거 (메모리 절약)
         this.problemCache.delete(problemId);
       } else {
-        // 캐시에서 찾을 수 없는 경우 (서버 재시작 등) - 임시 처리
-        console.warn(`Problem ${problemId} not found in cache`);
-        correctAnswer = parseInt(answer) + 1; // 임시로 오답 처리
-        isCorrect = false;
+        // 캐시에서 찾을 수 없는 경우 (서버 재시작 등)
+        console.error(`Problem ${problemId} not found in cache`);
+        return res.status(400).json({ 
+          error: '문제가 만료되었습니다. 새로운 문제를 받아주세요.', 
+          needsRetry: true,
+          requireNewProblem: true
+        });
       }
 
       // 답안 기록
@@ -112,7 +115,7 @@ export class SimpleProblemController {
       let pokemonCaught = null;
       let experienceGained = 0;
       if (isCorrect) {
-        const randomPokemonId = Math.floor(Math.random() * 5) + 1; // 1-5
+        const randomPokemonId = Math.floor(Math.random() * 842) + 1; // 1-842 (전체 포켓몬 범위)
         const catchResult = await this.gameService.catchPokemon(userId, randomPokemonId);
         if (catchResult.success) {
           pokemonCaught = catchResult.pokemon;

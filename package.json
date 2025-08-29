@@ -1,0 +1,24 @@
+{
+  "name": "pokemon-math-adventure",
+  "version": "1.0.0",
+  "description": "Pokemon Math Adventure - Educational game for elementary students",
+  "scripts": {
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "backend:dev": "cd backend && npm run dev",
+    "frontend:dev": "cd frontend && npm run dev",
+    "build": "npm run backend:build && npm run frontend:build",
+    "backend:build": "cd backend && npm run build",
+    "frontend:build": "cd frontend && npm run build",
+    "test": "npm run backend:test && npm run frontend:test",
+    "backend:test": "cd backend && npm test",
+    "frontend:test": "cd frontend && npm test",
+    "test:e2e": "playwright test",
+    "test:coverage": "npm run backend:test:coverage && npm run frontend:test:coverage",
+    "backend:test:coverage": "cd backend && npm run test:coverage",
+    "frontend:test:coverage": "cd frontend && npm run test:coverage"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "concurrently": "^8.2.2"
+  }
+}

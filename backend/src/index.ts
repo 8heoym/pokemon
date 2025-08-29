@@ -109,6 +109,45 @@ app.post('/api/pokemon/initialize', async (req, res) => {
   }
 });
 
+// 포켓몬 이름 수정 API
+app.post('/api/pokemon/fix-names', async (req, res) => {
+  try {
+    const result = await pokemonService.fixPokemonNames();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: '포켓몬 이름 수정 실패' });
+  }
+});
+
+// 개별 포켓몬 업데이트 API
+app.patch('/api/pokemon/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const updates = req.body;
+    
+    const updatedPokemon = await pokemonService.updatePokemon(id, updates);
+    if (!updatedPokemon) {
+      return res.status(404).json({ error: '포켓몬을 찾을 수 없습니다.' });
+    }
+    
+    res.json(updatedPokemon);
+  } catch (error) {
+    res.status(500).json({ error: '포켓몬 업데이트 실패' });
+  }
+});
+
+// 포켓몬 크롤링 및 저장 API
+app.post('/api/pokemon/crawl-and-save', async (req, res) => {
+  try {
+    console.log('포켓몬 크롤링 API 호출됨');
+    const result = await pokemonService.crawlAndSavePokemon();
+    res.json(result);
+  } catch (error) {
+    console.error('크롤링 API 오류:', error);
+    res.status(500).json({ error: '포켓몬 크롤링 및 저장 실패' });
+  }
+});
+
 // 문제 관련 API 라우트
 app.post('/api/problems/generate', (req, res) => problemController.generateProblem(req, res));
 app.post('/api/problems/submit', (req, res) => problemController.submitAnswer(req, res));
