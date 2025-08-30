@@ -473,11 +473,21 @@ export class SupabasePokemonService {
 
   async crawlAndSavePokemon(): Promise<{ success: boolean; message: string; count: number }> {
     try {
-      console.log('포켓몬 크롤링 및 저장 시작...');
+      console.log('포켓몬 크롤링 기능은 프로덕션에서 비활성화되었습니다.');
       
-      // 크롤링 실행
-      const { PokemonCrawler } = await import('../utils/pokemonCrawler');
-      const crawler = new PokemonCrawler();
+      // 프로덕션 환경에서는 크롤링 비활성화
+      if (process.env.NODE_ENV === 'production') {
+        return {
+          success: false,
+          message: '크롤링 기능은 프로덕션 환경에서 사용할 수 없습니다. 기존 데이터를 사용하세요.',
+          count: 0
+        };
+      }
+      
+      // 개발 환경에서만 크롤링 허용
+      try {
+        const { PokemonCrawler } = await import('../utils/pokemonCrawler');
+        const crawler = new PokemonCrawler();
       
       try {
         const crawledPokemon = await crawler.crawlAllPokemon();
@@ -520,8 +530,17 @@ export class SupabasePokemonService {
           count: created.length
         };
         
-      } finally {
-        await crawler.close();
+        } finally {
+          await crawler.close();
+        }
+        
+      } catch (error) {
+        console.error('개발 환경 크롤링 실패:', error);
+        return {
+          success: false,
+          message: `크롤링 실패: ${error}`,
+          count: 0
+        };
       }
       
     } catch (error) {
