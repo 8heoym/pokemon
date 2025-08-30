@@ -1,5 +1,5 @@
 import { supabase, Database } from '../config/supabase';
-import { User, UserAnswer } from '../../../shared/types';
+import { User, UserAnswer } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 type UserRow = Database['public']['Tables']['users']['Row'];

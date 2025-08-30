@@ -1,5 +1,5 @@
-import puppeteer from 'puppeteer';
-import { Pokemon } from '../../../shared/types';
+// import puppeteer from 'puppeteer'; // Removed for production deployment
+import { Pokemon } from '../types';
 
 export class PokemonCrawler {
   private browser: any = null;

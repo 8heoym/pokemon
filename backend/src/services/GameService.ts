@@ -2,7 +2,7 @@ import { UserModel } from '../models/User';
 import { PokemonService } from './PokemonService';
 import { LearningAnalysisService } from './LearningAnalysisService';
 import { v4 as uuidv4 } from 'uuid';
-import { User } from '../../../shared/types';
+import { User } from '../types';
 
 export class GameService {
   private pokemonService: PokemonService;

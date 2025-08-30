@@ -1,5 +1,5 @@
 import { PokemonModel } from '../models/Pokemon';
-import { Pokemon } from '../../../shared/types';
+import { Pokemon } from '../types';
 
 export class PokemonService {
   

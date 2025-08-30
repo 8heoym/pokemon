@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { UserAnswer as UserAnswerType } from '../../../shared/types';
+import { UserAnswer as UserAnswerType } from '../types';
 
 interface UserAnswerDocument extends Omit<UserAnswerType, 'id'>, Document {
   id: string;

@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { MathProblem as MathProblemType } from '../../../shared/types';
+import { MathProblem as MathProblemType } from '../types';
 
 interface MathProblemDocument extends Omit<MathProblemType, 'id'>, Document {
   id: string;

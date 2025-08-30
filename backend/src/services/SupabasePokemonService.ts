@@ -1,5 +1,5 @@
 import { supabase, Database } from '../config/supabase';
-import { Pokemon } from '../../../shared/types';
+import { Pokemon } from '../types';
 
 type PokemonRow = Database['public']['Tables']['pokemon']['Row'];
 type PokemonInsert = Database['public']['Tables']['pokemon']['Insert'];
@@ -484,64 +484,8 @@ export class SupabasePokemonService {
         };
       }
       
-      // 개발 환경에서만 크롤링 허용
-      try {
-        const { PokemonCrawler } = await import('../utils/pokemonCrawler');
-        const crawler = new PokemonCrawler();
-      
-      try {
-        const crawledPokemon = await crawler.crawlAllPokemon();
-        console.log(`크롤링 완료: ${crawledPokemon.length}마리`);
-        
-        if (crawledPokemon.length === 0) {
-          throw new Error('크롤링된 포켓몬이 없습니다.');
-        }
-        
-        // 크롤링된 데이터를 Supabase 형식으로 변환
-        const pokemonToInsert: PokemonInsert[] = crawledPokemon.map(pokemon => ({
-          id: pokemon.id,
-          name: pokemon.name,
-          korean_name: pokemon.koreanName,
-          image_url: pokemon.imageUrl,
-          region: pokemon.region,
-          multiplication_table: pokemon.multiplicationTable,
-          rarity: pokemon.rarity as 'common' | 'uncommon' | 'rare' | 'legendary',
-          characteristics: pokemon.characteristics
-        }));
-        
-        // 기존 데이터 삭제
-        console.log('기존 포켓몬 데이터 삭제 중...');
-        const { error: deleteError } = await supabase
-          .from('pokemon')
-          .delete()
-          .neq('id', 0); // 모든 데이터 삭제
-
-        if (deleteError) {
-          console.log('삭제 중 오류 (무시):', deleteError.message);
-        }
-        
-        // 새 데이터 삽입
-        console.log(`${pokemonToInsert.length}마리 포켓몬 데이터 저장 중...`);
-        const created = await this.createMultiplePokemon(pokemonToInsert);
-        
-        return {
-          success: true,
-          message: `${created.length}마리의 포켓몬이 크롤링되어 데이터베이스에 저장되었습니다.`,
-          count: created.length
-        };
-        
-        } finally {
-          await crawler.close();
-        }
-        
-      } catch (error) {
-        console.error('개발 환경 크롤링 실패:', error);
-        return {
-          success: false,
-          message: `크롤링 실패: ${error}`,
-          count: 0
-        };
-      }
+      // 크롤링 기능은 개발 환경에서만 사용 가능하며 puppeteer 설치가 필요합니다
+      throw new Error('크롤링 기능은 프로덕션 배포에서 제거되었습니다. 기존 캐시 데이터나 수동 업로드를 사용하세요.');
       
     } catch (error) {
       console.error('포켓몬 크롤링 및 저장 실패:', error);
