@@ -165,4 +165,5 @@ For development debugging:
 
 ## TheGoldenRule
 - When unsure about implementation details, ALWAYS ask the developer.
-- 코드를 변경하기 전에 개발자에게 물어보아야 합니다.
+- 불필요한 리포트, 피드백 시스템을 만드는 것을 지양합니다.
+- 

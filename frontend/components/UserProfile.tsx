@@ -11,9 +11,17 @@ interface User {
 
 interface UserProfileProps {
   user: User | null;
+  onPokedexClick?: () => void;
+  onLeaderboardClick?: () => void;
+  onLogout?: () => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ 
+  user, 
+  onPokedexClick, 
+  onLeaderboardClick, 
+  onLogout 
+}) => {
   if (!user) {
     return (
       <div className="bg-white rounded-xl p-4 shadow-lg">

@@ -203,7 +203,10 @@ export default function GameDashboard({
       {/* 리더보드 모달 */}
       {showLeaderboard && (
         <LeaderboardModal
+          isOpen={showLeaderboard}
           onClose={() => setShowLeaderboard(false)}
+          leaderboard={[]}
+          loading={false}
         />
       )}
 

@@ -75,7 +75,7 @@ export const calculateCatchRate = (userAnswer: number, correctAnswer: number): n
 // 경험치 획득량 계산
 export const calculateExpGain = (rarity: string, isCorrect: boolean): number => {
   const baseExp = isCorrect ? 20 : 5;
-  const rarityMultiplier = {
+  const rarityMultiplier: { [key: string]: number } = {
     common: 1,
     uncommon: 1.5,
     rare: 2,
@@ -126,12 +126,6 @@ export const createRegionData = (
   };
 };
 
-// 시간 포맷팅 함수
-export const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return mins > 0 ? `${mins}분 ${secs}초` : `${secs}초`;
-};
 
 // 숫자 포맷팅 (천 단위 콤마)
 export const formatNumber = (num: number): string => {
@@ -168,6 +162,45 @@ export const calculateAchievements = (
   if (regionCompletionRate >= 100) achievements.push('🌟 지역 정복자');
 
   return achievements;
+};
+
+// 답안 검증 함수
+export const validateAnswer = (userAnswer: any, correctAnswer: any): boolean => {
+  const user = Number(userAnswer);
+  const correct = Number(correctAnswer);
+  if (isNaN(user) || isNaN(correct)) return false;
+  return user === correct;
+};
+
+// 레벨별 필요 경험치 계산
+export const getRequiredExperience = (level: number): number => {
+  if (level <= 1) return 0;
+  return Math.pow(level - 1, 2) * 100;
+};
+
+// 시간을 mm:ss 형식으로 포맷
+export const formatTime = (seconds: number): string => {
+  if (seconds < 0) return '00:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+// 정확도 계산 (0-100)
+export const calculateAccuracy = (correctAnswers: number, totalQuestions: number): number => {
+  if (totalQuestions === 0) return 0;
+  if (correctAnswers > totalQuestions) return 100;
+  return Math.round((correctAnswers / totalQuestions) * 100);
+};
+
+// 레벨에 따른 포켓몬 희귀도 결정
+export const getPokemonRarity = (level: number): string => {
+  if (level <= 0) return 'common';
+  if (level < 5) return 'common';
+  if (level < 10) return 'uncommon';
+  if (level < 15) return 'rare';
+  if (level < 20) return 'epic';
+  return 'legendary';
 };
 
 // 랜덤 격려 메시지
