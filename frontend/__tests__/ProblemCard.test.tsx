@@ -1,10 +1,10 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ProblemCard from '@/components/ProblemCard';
-import { MathProblem } from '@/types';
+import ProblemCard from '../components/ProblemCard';
+import { MathProblem } from '../types';
 
 // API 모킹
-jest.mock('@/utils/api', () => ({
+jest.mock('../utils/api', () => ({
   problemAPI: {
     submit: jest.fn()
   }
