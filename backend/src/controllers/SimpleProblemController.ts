@@ -90,8 +90,8 @@ export class SimpleProblemController {
       } else {
         // 캐시에서 찾을 수 없는 경우 (서버 재시작 등)
         console.error(`Problem ${problemId} not found in cache`);
-        return res.status(400).json({ 
-          error: '문제가 만료되었습니다. 새로운 문제를 받아주세요.', 
+        return res.status(404).json({ 
+          error: '문제를 찾을 수 없습니다.', 
           needsRetry: true,
           requireNewProblem: true
         });
@@ -142,6 +142,14 @@ export class SimpleProblemController {
   async getHint(req: Request, res: Response) {
     try {
       const { problemId, userId } = req.params;
+
+      // problemId 유효성 검사
+      const cachedProblem = this.problemCache.get(problemId);
+      if (!cachedProblem) {
+        return res.status(404).json({
+          error: '문제를 찾을 수 없습니다.'
+        });
+      }
 
       // 간단한 힌트 제공
       const hints = [
