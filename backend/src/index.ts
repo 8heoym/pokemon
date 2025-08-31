@@ -32,6 +32,26 @@ app.get('/', (req, res) => {
 });
 
 // 포켓몬 관련 API
+app.get('/api/pokemon', async (req, res) => {
+  try {
+    const { table, region } = req.query;
+    
+    if (table) {
+      const tableNum = parseInt(table as string);
+      const pokemon = await pokemonService.getPokemonByMultiplicationTable(tableNum);
+      res.json(pokemon);
+    } else if (region) {
+      const pokemon = await pokemonService.getPokemonByRegion(region as string);
+      res.json(pokemon);
+    } else {
+      const stats = await pokemonService.getPokemonStats();
+      res.json({ message: '포켓몬 도감 API', stats });
+    }
+  } catch (error) {
+    res.status(500).json({ error: '포켓몬 도감 조회 중 오류가 발생했습니다.' });
+  }
+});
+
 app.get('/api/pokemon/stats', async (req, res) => {
   try {
     const stats = await pokemonService.getPokemonStats();
