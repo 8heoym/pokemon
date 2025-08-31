@@ -33,7 +33,6 @@ jobs:
       - name: Deploy to Railway (Backend)
         uses: bervProject/railway-deploy@main
         with:
-          service: pokemon-backend
           detach: false
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
