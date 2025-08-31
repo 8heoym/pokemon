@@ -77,6 +77,11 @@ a {
   color: #000000 !important;
 }
 
+.input-pokemon::placeholder {
+  color: #9ca3af !important;
+  opacity: 0.7;
+}
+
 /* 애니메이션 클래스 */
 .animate-correct {
   animation: correct 0.6s ease-out;
