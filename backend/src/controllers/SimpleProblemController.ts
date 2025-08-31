@@ -31,8 +31,30 @@ export class SimpleProblemController {
         });
       }
 
-      // 해당 구구단의 랜덤 포켓몬 선택
-      const pokemon = await this.pokemonService.getRandomPokemonByTable(multiplicationTable);
+      // 해당 구구단의 랜덤 포켓몬 선택 (재시도 로직 포함)
+      let pokemon = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (!pokemon && retryCount < maxRetries) {
+        try {
+          pokemon = await this.pokemonService.getRandomPokemonByTable(multiplicationTable);
+          if (pokemon) break;
+        } catch (error: any) {
+          retryCount++;
+          console.error(`포켓몬 조회 실패 (${retryCount}/${maxRetries}):`, error?.message);
+          
+          if (error?.code === '57014' && retryCount < maxRetries) {
+            // Query timeout - wait and retry
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+          
+          if (retryCount >= maxRetries) {
+            throw error;
+          }
+        }
+      }
       
       if (!pokemon) {
         return res.status(404).json({ 

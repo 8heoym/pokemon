@@ -8,7 +8,16 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 console.log('Supabase 연결 설정:', { url: supabaseUrl.substring(0, 30) + '...' });
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  db: {
+    schema: 'public'
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'pokemon-backend'
+    }
+  }
+});
 
 // 데이터베이스 테이블 정의
 export interface Database {

@@ -62,6 +62,24 @@ export class SupabasePokemonService {
 
   async getRandomPokemonByTable(table: number, rarity?: string): Promise<Pokemon | null> {
     try {
+      // First get count for random offset
+      let countQuery = supabase
+        .from('pokemon')
+        .select('*', { count: 'exact', head: true })
+        .eq('multiplication_table', table);
+      
+      if (rarity) {
+        countQuery = countQuery.eq('rarity', rarity);
+      }
+      
+      const { count, error: countError } = await countQuery;
+      
+      if (countError) throw countError;
+      if (!count || count === 0) return null;
+      
+      // Use random offset to get a random Pokemon
+      const randomOffset = Math.floor(Math.random() * count);
+      
       let query = supabase
         .from('pokemon')
         .select('*')
@@ -71,15 +89,14 @@ export class SupabasePokemonService {
         query = query.eq('rarity', rarity);
       }
       
-      const { data, error } = await query;
+      const { data, error } = await query
+        .range(randomOffset, randomOffset)
+        .limit(1);
       
       if (error) throw error;
       if (!data || data.length === 0) return null;
       
-      const randomIndex = Math.floor(Math.random() * data.length);
-      const pokemonData = data[randomIndex];
-      
-      return this.convertToSharedType([pokemonData])[0];
+      return this.convertToSharedType([data[0]])[0];
     } catch (error) {
       console.error('랜덤 포켓몬 조회 실패:', error);
       throw error;
