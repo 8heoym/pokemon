@@ -73,7 +73,8 @@ a {
 
 /* 입력 필드 스타일 */
 .input-pokemon {
-  @apply w-full p-4 text-2xl text-center border-2 border-blue-300 rounded-xl focus:border-blue-500 focus:outline-none bg-white shadow-inner font-bold text-gray-800;
+  @apply w-full p-4 text-2xl text-center border-2 border-blue-300 rounded-xl focus:border-blue-500 focus:outline-none bg-white shadow-inner font-bold;
+  color: #000000 !important;
 }
 
 /* 애니메이션 클래스 */
