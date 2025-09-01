@@ -52,12 +52,12 @@ const PokedexModal: React.FC<PokedexModalProps> = ({ isOpen, userId, onClose }) 
         const caughtPokemonData = userPokedex.caughtPokemon.find((p: any) => p.id === i);
         
         if (caughtPokemonData) {
-          // 잡은 포켓몬 - 백엔드 snake_case를 프론트엔드 camelCase로 변환
+          // 잡은 포켓몬 - 백엔드에서 이미 camelCase로 변환되어 옴
           const convertedPokemon: Pokemon = {
             id: caughtPokemonData.id,
             name: caughtPokemonData.name,
-            koreanName: caughtPokemonData.korean_name || caughtPokemonData.koreanName,
-            imageUrl: caughtPokemonData.image_url || caughtPokemonData.imageUrl,
+            koreanName: caughtPokemonData.koreanName || caughtPokemonData.korean_name,
+            imageUrl: caughtPokemonData.imageUrl || caughtPokemonData.image_url,
             rarity: caughtPokemonData.rarity,
             characteristics: caughtPokemonData.characteristics || [],
             region: caughtPokemonData.region
@@ -88,6 +88,23 @@ const PokedexModal: React.FC<PokedexModalProps> = ({ isOpen, userId, onClose }) 
       setPokedexEntries(entries);
     } catch (error) {
       console.error('포켓몬 도감 로드 실패:', error);
+      // 에러가 발생해도 빈 도감을 보여주기
+      const emptyEntries: PokedexEntry[] = [];
+      for (let i = 1; i <= 842; i++) {
+        emptyEntries.push({
+          pokemon: {
+            id: i,
+            name: '???',
+            koreanName: '???',
+            imageUrl: '',
+            rarity: 'unknown',
+            characteristics: [],
+            region: '???'
+          },
+          caught: false
+        });
+      }
+      setPokedexEntries(emptyEntries);
     } finally {
       setLoading(false);
     }

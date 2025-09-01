@@ -171,6 +171,13 @@ export class SupabaseGameService {
 
       if (error) throw error;
 
+      // 디버깅용 로그
+      console.log('Pokedex Debug - User ID:', userId);
+      console.log('Pokedex Debug - Caught Pokemon Count:', caughtPokemon?.length || 0);
+      if (caughtPokemon && caughtPokemon.length > 0) {
+        console.log('Pokedex Debug - First Pokemon:', JSON.stringify(caughtPokemon[0], null, 2));
+      }
+
       const byRarity = this.groupBy(caughtPokemon, 'rarity');
       const byRegion = this.groupBy(caughtPokemon, 'region');
 
