@@ -111,4 +111,23 @@ export class SimpleGameController {
       res.status(500).json({ error: '리더보드 조회 중 오류가 발생했습니다.' });
     }
   }
+
+  async getPokemonByIds(req: Request, res: Response) {
+    try {
+      const { pokemonIds } = req.body; // 포켓몬 ID 배열
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      if (!pokemonIds || !Array.isArray(pokemonIds)) {
+        return res.status(400).json({ error: '포켓몬 ID 배열이 필요합니다.' });
+      }
+
+      const result = await this.gameService.getPokemonByIds(pokemonIds, limit, offset);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('포켓몬 일괄 조회 실패:', error);
+      res.status(500).json({ error: '포켓몬 일괄 조회 중 오류가 발생했습니다.' });
+    }
+  }
 }

@@ -80,6 +80,10 @@ export const pokemonAPI = {
 
   getById: (id: number) => 
     api.get(`/pokemon/${id}`),
+
+  // 새로운 배치 조회 API - ID 목록을 받아서 포켓몬 데이터 반환
+  getBatch: (pokemonIds: number[], limit: number = 50, offset: number = 0) =>
+    api.post('/pokemon/batch', { pokemonIds }, { params: { limit, offset } }),
 };
 
 // 게임 관련 API

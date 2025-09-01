@@ -258,6 +258,7 @@ app.post('/api/users/:userId/catch', (req, res) => gameController.catchPokemon(r
 app.get('/api/users/:userId/pokedex', (req, res) => gameController.getPokedex(req, res));
 app.get('/api/users/:userId/stats', (req, res) => gameController.getUserStats(req, res));
 app.get('/api/leaderboard', (req, res) => gameController.getLeaderboard(req, res));
+app.post('/api/pokemon/batch', (req, res) => gameController.getPokemonByIds(req, res));
 
 // 에러 핸들링
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
