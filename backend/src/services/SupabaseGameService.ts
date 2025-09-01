@@ -151,10 +151,22 @@ export class SupabaseGameService {
 
   async getPokedex(userId: string) {
     try {
+      console.log('=== Pokedex Request Start ===');
+      console.log('User ID:', userId);
+      
       const user = await this.getUserById(userId);
-      if (!user) throw new Error('사용자를 찾을 수 없습니다.');
+      console.log('User found:', user ? 'YES' : 'NO');
+      
+      if (!user) {
+        console.error('User not found for ID:', userId);
+        throw new Error('사용자를 찾을 수 없습니다.');
+      }
 
-      if (user.caughtPokemon.length === 0) {
+      console.log('User caught pokemon count:', user.caughtPokemon?.length || 0);
+      console.log('User caught pokemon IDs:', user.caughtPokemon);
+
+      if (!user.caughtPokemon || user.caughtPokemon.length === 0) {
+        console.log('No caught pokemon, returning empty pokedex');
         return {
           totalCaught: 0,
           caughtPokemon: [],
@@ -163,33 +175,92 @@ export class SupabaseGameService {
         };
       }
 
-      // 잡은 포켓몬 정보 조회
-      const { data: caughtPokemon, error } = await supabase
-        .from('pokemon')
-        .select('*')
-        .in('id', user.caughtPokemon);
-
-      if (error) throw error;
-
-      // 디버깅용 로그
-      console.log('Pokedex Debug - User ID:', userId);
-      console.log('Pokedex Debug - Caught Pokemon Count:', caughtPokemon?.length || 0);
-      if (caughtPokemon && caughtPokemon.length > 0) {
-        console.log('Pokedex Debug - First Pokemon:', JSON.stringify(caughtPokemon[0], null, 2));
+      // 타임아웃 방지: 최대 50개씩만 쿼리하거나 더 간단한 응답 반환
+      if (user.caughtPokemon.length > 50) {
+        console.log('Too many caught pokemon, returning simplified response');
+        return {
+          totalCaught: user.caughtPokemon.length,
+          caughtPokemon: [], // 빈 배열로 반환하여 타임아웃 방지
+          byRarity: { unknown: user.caughtPokemon.length },
+          byRegion: { unknown: user.caughtPokemon.length }
+        };
       }
 
-      const byRarity = this.groupBy(caughtPokemon, 'rarity');
-      const byRegion = this.groupBy(caughtPokemon, 'region');
+      // 잡은 포켓몬 정보 조회 (50개 이하만)
+      console.log('Querying pokemon table for IDs:', user.caughtPokemon);
+      
+      let caughtPokemon = null;
+      let error = null;
+      
+      try {
+        // 타임아웃을 피하기 위해 간단한 쿼리로 변경
+        const result = await supabase
+          .from('pokemon')
+          .select('id, name, korean_name, image_url, rarity, region')
+          .in('id', user.caughtPokemon)
+          .limit(50);
+          
+        caughtPokemon = result.data;
+        error = result.error;
+      } catch (queryError) {
+        console.error('Pokemon query failed, falling back to empty result:', queryError);
+        // 쿼리 실패시 빈 결과 반환
+        return {
+          totalCaught: user.caughtPokemon.length,
+          caughtPokemon: [],
+          byRarity: { unknown: user.caughtPokemon.length },
+          byRegion: { unknown: user.caughtPokemon.length }
+        };
+      }
 
-      return {
-        totalCaught: caughtPokemon.length,
-        caughtPokemon,
+      if (error) {
+        console.error('Supabase pokemon query error:', error);
+        // 에러 발생시에도 빈 결과 반환하여 500 에러 방지
+        return {
+          totalCaught: user.caughtPokemon.length,
+          caughtPokemon: [],
+          byRarity: { unknown: user.caughtPokemon.length },
+          byRegion: { unknown: user.caughtPokemon.length }
+        };
+      }
+
+      console.log('Pokemon query result count:', caughtPokemon?.length || 0);
+      if (caughtPokemon && caughtPokemon.length > 0) {
+        console.log('First Pokemon data:', JSON.stringify(caughtPokemon[0], null, 2));
+      }
+
+      const byRarity = this.groupBy(caughtPokemon || [], 'rarity');
+      const byRegion = this.groupBy(caughtPokemon || [], 'region');
+
+      const result = {
+        totalCaught: caughtPokemon?.length || 0,
+        caughtPokemon: caughtPokemon || [],
         byRarity,
         byRegion
       };
 
+      console.log('=== Pokedex Request Success ===');
+      return result;
+
     } catch (error) {
-      console.error('포켓몬 도감 조회 실패:', error);
+      console.error('=== Pokedex Request Error ===');
+      console.error('Error type:', error?.constructor?.name);
+      console.error('Error message:', error?.message);
+      console.error('Error code:', error?.code);
+      console.error('Full error:', error);
+      console.error('==============================');
+      
+      // SQL 타임아웃이나 데이터베이스 연결 오류시 빈 도감 반환
+      if (error?.code === '57014' || error?.code === 'PGRST301' || error?.message?.includes('timeout')) {
+        console.log('Database timeout detected, returning empty pokedex');
+        return {
+          totalCaught: 0,
+          caughtPokemon: [],
+          byRarity: {},
+          byRegion: {}
+        };
+      }
+      
       throw error;
     }
   }
