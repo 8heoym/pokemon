@@ -161,10 +161,10 @@ export default function GameDashboard({
             transition={{ duration: 0.3 }}
           >
             <MultiplicationTableSelector
+              user={user}
               selectedTable={selectedTable}
               onTableSelect={setSelectedTable}
               onStartProblem={(table) => generateNewProblem(table)}
-              completedTables={user.completedTables}
             />
           </motion.div>
         ) : (
