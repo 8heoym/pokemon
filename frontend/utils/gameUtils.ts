@@ -75,7 +75,7 @@ export const calculateCatchRate = (userAnswer: number, correctAnswer: number): n
 // 경험치 획득량 계산
 export const calculateExpGain = (rarity: string, isCorrect: boolean): number => {
   const baseExp = isCorrect ? 20 : 5;
-  const rarityMultiplier = {
+  const rarityMultiplier: { [key: string]: number } = {
     common: 1,
     uncommon: 1.5,
     rare: 2,

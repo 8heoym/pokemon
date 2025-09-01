@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { userAPI } from '@/utils/api';
 
 interface Pokemon {
   id: number;
@@ -12,14 +13,38 @@ interface Pokemon {
 interface PokedexModalProps {
   isOpen: boolean;
   onClose: () => void;
-  caughtPokemon: Pokemon[];
+  userId: string;
 }
 
 const PokedexModal: React.FC<PokedexModalProps> = ({
   isOpen,
   onClose,
-  caughtPokemon
+  userId
 }) => {
+  const [caughtPokemon, setCaughtPokemon] = useState<Pokemon[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen && userId) {
+      loadPokedex();
+    }
+  }, [isOpen, userId]);
+
+  const loadPokedex = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await userAPI.getPokedex(userId);
+      setCaughtPokemon(response.data.caughtPokemon || []);
+    } catch (error) {
+      console.error('포켓몬 도감 로드 실패:', error);
+      setError('포켓몬 도감을 불러오는데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   const getRarityColor = (rarity: string) => {
@@ -63,7 +88,23 @@ const PokedexModal: React.FC<PokedexModalProps> = ({
 
         {/* 포켓몬 리스트 */}
         <div className="p-6 overflow-y-auto max-h-[60vh]">
-          {caughtPokemon.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="text-6xl mb-4">⏳</div>
+              <p className="text-lg text-gray-500">포켓몬 도감을 불러오는 중...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">
+              <div className="text-6xl mb-4">❌</div>
+              <p className="text-lg">{error}</p>
+              <button
+                onClick={loadPokedex}
+                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                다시 시도
+              </button>
+            </div>
+          ) : caughtPokemon.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <div className="text-6xl mb-4">📱</div>
               <p className="text-lg">아직 잡은 포켓몬이 없습니다.</p>

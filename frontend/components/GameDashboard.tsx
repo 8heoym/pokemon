@@ -138,9 +138,6 @@ export default function GameDashboard({
       {/* 상단 사용자 정보 */}
       <UserProfile 
         user={user}
-        onPokedexClick={() => setShowPokedex(true)}
-        onLeaderboardClick={() => setShowLeaderboard(true)}
-        onLogout={onLogout}
       />
 
       {/* 메인 게임 영역 */}
@@ -154,10 +151,10 @@ export default function GameDashboard({
             transition={{ duration: 0.3 }}
           >
             <MultiplicationTableSelector
-              user={user}
               selectedTable={selectedTable}
               onTableSelect={setSelectedTable}
               onStartProblem={(table) => generateNewProblem(table)}
+              completedTables={user.completedTables}
             />
           </motion.div>
         ) : (
@@ -183,19 +180,19 @@ export default function GameDashboard({
       </AnimatePresence>
 
       {/* 포켓몬 도감 모달 */}
-      {showPokedex && (
-        <PokedexModal
-          userId={user.id}
-          onClose={() => setShowPokedex(false)}
-        />
-      )}
+      <PokedexModal
+        isOpen={showPokedex}
+        userId={user.id}
+        onClose={() => setShowPokedex(false)}
+      />
 
       {/* 리더보드 모달 */}
-      {showLeaderboard && (
-        <LeaderboardModal
-          onClose={() => setShowLeaderboard(false)}
-        />
-      )}
+      <LeaderboardModal
+        isOpen={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+        leaderboard={[]}
+        loading={false}
+      />
 
       {/* 하단 통계 정보 */}
       <motion.div 
