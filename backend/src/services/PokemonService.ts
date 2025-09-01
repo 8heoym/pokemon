@@ -1,6 +1,5 @@
 import { PokemonModel } from '../models/Pokemon';
-import { PokemonCrawler } from '../utils/pokemonCrawler';
-import { Pokemon } from '../../../shared/types';
+import { Pokemon } from '../types';
 
 export class PokemonService {
   
@@ -16,19 +15,12 @@ export class PokemonService {
 
       console.log('포켓몬 데이터베이스 초기화 시작...');
       
-      // 크롤링 수행
-      const crawler = new PokemonCrawler();
-      const pokemonList = await crawler.crawlAllPokemon();
-      await crawler.close();
-
-      // 데이터베이스에 저장
-      const savedPokemon = await PokemonModel.insertMany(pokemonList);
-      
-      console.log(`${savedPokemon.length}마리의 포켓몬이 데이터베이스에 저장되었습니다.`);
+      // 크롤링 기능은 개발 환경에서만 사용 가능
+      throw new Error('크롤링 기능은 프로덕션 환경에서 비활성화되었습니다. 기존 캐시된 데이터를 사용하세요.');
       
       return { 
         success: true, 
-        message: `포켓몬 데이터베이스 초기화 완료: ${savedPokemon.length}마리` 
+        message: '포켓몬 데이터베이스 초기화 완료' 
       };
       
     } catch (error) {

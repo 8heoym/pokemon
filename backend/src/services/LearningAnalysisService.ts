@@ -1,5 +1,5 @@
 import { UserAnswerModel } from '../models/UserAnswer';
-import { LearningAnalysis, UserAnswer } from '../../../shared/types';
+import { LearningAnalysis, UserAnswer } from '../types';
 
 export class LearningAnalysisService {
   

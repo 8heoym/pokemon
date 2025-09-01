@@ -31,8 +31,30 @@ export class SimpleProblemController {
         });
       }
 
-      // 해당 구구단의 랜덤 포켓몬 선택
-      const pokemon = await this.pokemonService.getRandomPokemonByTable(multiplicationTable);
+      // 해당 구구단의 랜덤 포켓몬 선택 (재시도 로직 포함)
+      let pokemon = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (!pokemon && retryCount < maxRetries) {
+        try {
+          pokemon = await this.pokemonService.getRandomPokemonByTable(multiplicationTable);
+          if (pokemon) break;
+        } catch (error: any) {
+          retryCount++;
+          console.error(`포켓몬 조회 실패 (${retryCount}/${maxRetries}):`, error?.message);
+          
+          if (error?.code === '57014' && retryCount < maxRetries) {
+            // Query timeout - wait and retry
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+          
+          if (retryCount >= maxRetries) {
+            throw error;
+          }
+        }
+      }
       
       if (!pokemon) {
         return res.status(404).json({ 
@@ -88,10 +110,13 @@ export class SimpleProblemController {
         // 사용된 문제는 캐시에서 제거 (메모리 절약)
         this.problemCache.delete(problemId);
       } else {
-        // 캐시에서 찾을 수 없는 경우 (서버 재시작 등) - 임시 처리
-        console.warn(`Problem ${problemId} not found in cache`);
-        correctAnswer = parseInt(answer) + 1; // 임시로 오답 처리
-        isCorrect = false;
+        // 캐시에서 찾을 수 없는 경우 (서버 재시작 등)
+        console.error(`Problem ${problemId} not found in cache`);
+        return res.status(404).json({ 
+          error: '문제를 찾을 수 없습니다.', 
+          needsRetry: true,
+          requireNewProblem: true
+        });
       }
 
       // 답안 기록
@@ -112,7 +137,7 @@ export class SimpleProblemController {
       let pokemonCaught = null;
       let experienceGained = 0;
       if (isCorrect) {
-        const randomPokemonId = Math.floor(Math.random() * 5) + 1; // 1-5
+        const randomPokemonId = Math.floor(Math.random() * 842) + 1; // 1-842 (전체 포켓몬 범위)
         const catchResult = await this.gameService.catchPokemon(userId, randomPokemonId);
         if (catchResult.success) {
           pokemonCaught = catchResult.pokemon;
@@ -139,6 +164,14 @@ export class SimpleProblemController {
   async getHint(req: Request, res: Response) {
     try {
       const { problemId, userId } = req.params;
+
+      // problemId 유효성 검사
+      const cachedProblem = this.problemCache.get(problemId);
+      if (!cachedProblem) {
+        return res.status(404).json({
+          error: '문제를 찾을 수 없습니다.'
+        });
+      }
 
       // 간단한 힌트 제공
       const hints = [

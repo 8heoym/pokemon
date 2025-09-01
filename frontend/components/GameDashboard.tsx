@@ -89,8 +89,18 @@ export default function GameDashboard({
       
       return result;
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to submit answer:', error);
+      
+      // 백엔드에서 새 문제가 필요하다고 알려주는 경우
+      if (error.response?.data?.requireNewProblem) {
+        alert(error.response.data.error || '문제가 만료되었습니다. 새로운 문제를 받겠습니다.');
+        // 새로운 문제 자동 생성
+        await generateNewProblem(selectedTable);
+        // 빈 결과 반환하여 ProblemCard가 정상 처리하도록 함
+        return { isCorrect: false, correctAnswer: 0, feedback: '새로운 문제를 받았습니다. 다시 시도해주세요.' };
+      }
+      
       throw error;
     }
   };

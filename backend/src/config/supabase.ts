@@ -1,15 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://sgbjhwhwnldhgcydqqny.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnYmpod2h3bmxkaGdjeWRxcW55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzc5MTEsImV4cCI6MjA3MTYxMzkxMX0.X7FMI_tNPsC7U0ZBzhYKZ3nsCbbrzMkbNH37C0HP2VE';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-// 개발 중에는 하드코딩된 값 사용, 프로덕션에서는 환경변수 필수
-if (process.env.NODE_ENV === 'production' && (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY)) {
-  throw new Error('Supabase URL과 Key가 환경변수에 설정되지 않았습니다.');
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('SUPABASE_URL과 SUPABASE_ANON_KEY 환경변수가 필요합니다.');
 }
 
 console.log('Supabase 연결 설정:', { url: supabaseUrl.substring(0, 30) + '...' });
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  db: {
+    schema: 'public'
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'pokemon-backend'
+    }
+  }
+});
 
 // 데이터베이스 테이블 정의
 export interface Database {

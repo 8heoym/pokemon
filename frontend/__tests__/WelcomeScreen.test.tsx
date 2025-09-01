@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import WelcomeScreen from '@/components/WelcomeScreen';
+import WelcomeScreen from '../components/WelcomeScreen';
 
 describe('WelcomeScreen', () => {
   const mockOnCreateUser = jest.fn();
@@ -20,10 +20,10 @@ describe('WelcomeScreen', () => {
       />
     );
 
-    expect(screen.getByText('포켓몬과 함께하는')).toBeInTheDocument();
-    expect(screen.getByText('수학 모험')).toBeInTheDocument();
-    expect(screen.getByText('새로 시작하기')).toBeInTheDocument();
-    expect(screen.getByText('이어하기')).toBeInTheDocument();
+    expect(screen.getByText('포켓몬 수학 모험')).toBeInTheDocument();
+    expect(screen.getByText('포켓몬과 함께 곱셈을 마스터하자!')).toBeInTheDocument();
+    expect(screen.getByText('🆕 새로 시작하기')).toBeInTheDocument();
+    expect(screen.getByText('📂 이어서 하기')).toBeInTheDocument();
   });
 
   it('새로 시작하기 버튼 클릭 시 닉네임 입력 폼이 나타나야 함', async () => {
@@ -38,11 +38,11 @@ describe('WelcomeScreen', () => {
       />
     );
 
-    const newGameButton = screen.getByText('새로 시작하기');
+    const newGameButton = screen.getByText('🆕 새로 시작하기');
     await user.click(newGameButton);
 
-    expect(screen.getByPlaceholderText('닉네임을 입력하세요')).toBeInTheDocument();
-    expect(screen.getByText('모험 시작!')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('예: 지우, 웅이, 이슬이...')).toBeInTheDocument();
+    expect(screen.getByText('🚀 모험 시작!')).toBeInTheDocument();
   });
 
   it('이어하기 버튼 클릭 시 사용자 ID 입력 폼이 나타나야 함', async () => {
@@ -57,11 +57,11 @@ describe('WelcomeScreen', () => {
       />
     );
 
-    const continueButton = screen.getByText('이어하기');
+    const continueButton = screen.getByText('📂 이어서 하기');
     await user.click(continueButton);
 
     expect(screen.getByPlaceholderText('사용자 ID를 입력하세요')).toBeInTheDocument();
-    expect(screen.getByText('불러오기')).toBeInTheDocument();
+    expect(screen.getByText('🚀 모험 시작!')).toBeInTheDocument();
   });
 
   it('닉네임 입력 후 모험 시작 버튼 클릭 시 onCreateUser 호출', async () => {

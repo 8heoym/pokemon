@@ -18,7 +18,7 @@ export default function HomePage() {
       setError('');
       
       const response = await userAPI.create(nickname);
-      const newUser = response.data.user;
+      const newUser = response.data;
       
       setCurrentUser(newUser);
       

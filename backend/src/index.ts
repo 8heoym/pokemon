@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { SupabasePokemonService } from './services/SupabasePokemonService';
 import { SimpleProblemController } from './controllers/SimpleProblemController';
 import { SimpleGameController } from './controllers/SimpleGameController';
+import { PokemonImageDownloader } from './utils/imageDownloader';
 
 // 환경변수 로드
 dotenv.config();
@@ -31,6 +32,26 @@ app.get('/', (req, res) => {
 });
 
 // 포켓몬 관련 API
+app.get('/api/pokemon', async (req, res) => {
+  try {
+    const { table, region } = req.query;
+    
+    if (table) {
+      const tableNum = parseInt(table as string);
+      const pokemon = await pokemonService.getPokemonByMultiplicationTable(tableNum);
+      res.json(pokemon);
+    } else if (region) {
+      const pokemon = await pokemonService.getPokemonByRegion(region as string);
+      res.json(pokemon);
+    } else {
+      const stats = await pokemonService.getPokemonStats();
+      res.json({ message: '포켓몬 도감 API', stats });
+    }
+  } catch (error) {
+    res.status(500).json({ error: '포켓몬 도감 조회 중 오류가 발생했습니다.' });
+  }
+});
+
 app.get('/api/pokemon/stats', async (req, res) => {
   try {
     const stats = await pokemonService.getPokemonStats();
@@ -106,6 +127,121 @@ app.post('/api/pokemon/initialize', async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ error: '데이터베이스 초기화 실패' });
+  }
+});
+
+// 포켓몬 이름 수정 API
+app.post('/api/pokemon/fix-names', async (req, res) => {
+  try {
+    const result = await pokemonService.fixPokemonNames();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: '포켓몬 이름 수정 실패' });
+  }
+});
+
+// 개별 포켓몬 업데이트 API
+app.patch('/api/pokemon/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const updates = req.body;
+    
+    const updatedPokemon = await pokemonService.updatePokemon(id, updates);
+    if (!updatedPokemon) {
+      return res.status(404).json({ error: '포켓몬을 찾을 수 없습니다.' });
+    }
+    
+    res.json(updatedPokemon);
+  } catch (error) {
+    res.status(500).json({ error: '포켓몬 업데이트 실패' });
+  }
+});
+
+// 포켓몬 크롤링 및 저장 API
+app.post('/api/pokemon/crawl-and-save', async (req, res) => {
+  try {
+    console.log('포켓몬 크롤링 API 호출됨');
+    const result = await pokemonService.crawlAndSavePokemon();
+    res.json(result);
+  } catch (error) {
+    console.error('크롤링 API 오류:', error);
+    res.status(500).json({ error: '포켓몬 크롤링 및 저장 실패' });
+  }
+});
+
+// 포켓몬 이미지 다운로드 API
+app.post('/api/pokemon/download-images', async (req, res) => {
+  try {
+    console.log('포켓몬 이미지 다운로드 API 호출됨');
+    const downloader = new PokemonImageDownloader();
+    
+    // Get current stats
+    const beforeStats = await downloader.getDownloadStats();
+    console.log('다운로드 전 상태:', beforeStats);
+    
+    // Download images
+    await downloader.downloadAllPokemonImages();
+    
+    // Get final stats
+    const afterStats = await downloader.getDownloadStats();
+    console.log('다운로드 후 상태:', afterStats);
+    
+    res.json({
+      success: true,
+      message: '포켓몬 이미지 다운로드 완료',
+      before: beforeStats,
+      after: afterStats,
+      downloaded: afterStats.withImages - beforeStats.withImages
+    });
+    
+  } catch (error) {
+    console.error('이미지 다운로드 API 오류:', error);
+    res.status(500).json({ 
+      error: '포켓몬 이미지 다운로드 실패',
+      message: error instanceof Error ? error.message : '알 수 없는 오류'
+    });
+  }
+});
+
+// 포켓몬 이미지 다운로드 상태 조회 API
+app.get('/api/pokemon/download-stats', async (req, res) => {
+  try {
+    const downloader = new PokemonImageDownloader();
+    const stats = await downloader.getDownloadStats();
+    
+    res.json({
+      success: true,
+      stats
+    });
+    
+  } catch (error) {
+    console.error('다운로드 상태 조회 오류:', error);
+    res.status(500).json({ error: '다운로드 상태 조회 실패' });
+  }
+});
+
+// 개별 포켓몬 이미지 조회 API
+app.get('/api/pokemon/:id/image', async (req, res) => {
+  try {
+    const pokemonId = parseInt(req.params.id);
+    const downloader = new PokemonImageDownloader();
+    
+    const imageBuffer = await downloader.getPokemonImage(pokemonId);
+    
+    if (!imageBuffer) {
+      return res.status(404).json({ error: '이미지를 찾을 수 없습니다.' });
+    }
+    
+    // Set appropriate headers for image response
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', imageBuffer.length);
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+    
+    res.send(imageBuffer);
+    
+  } catch (error) {
+    console.error('포켓몬 이미지 조회 오류:', error);
+    res.status(500).json({ error: '이미지 조회 실패' });
   }
 });
 

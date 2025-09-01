@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { userAPI, problemAPI, pokemonAPI, gameAPI } from '@/utils/api';
+import { userAPI, problemAPI, pokemonAPI, gameAPI } from '../../utils/api';
 
 // Axios 모킹
 jest.mock('axios');

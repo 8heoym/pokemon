@@ -119,6 +119,7 @@ export default function WelcomeScreen({
                 onChange={(e) => setNickname(e.target.value)}
                 placeholder="예: 지우, 웅이, 이슬이..."
                 className="input-pokemon"
+                style={{ color: '#000000' }}
                 maxLength={20}
                 disabled={isLoading}
               />
@@ -137,6 +138,7 @@ export default function WelcomeScreen({
                 onChange={(e) => setUserId(e.target.value)}
                 placeholder="이전에 사용한 닉네임을 입력하세요"
                 className="input-pokemon"
+                style={{ color: '#000000' }}
                 disabled={isLoading}
                 maxLength={20}
               />

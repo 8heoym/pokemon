@@ -1,0 +1,32 @@
+[
+  {
+    "id": 83,
+    "currentName": "Farfetch’d",
+    "currentKoreanName": "파오리",
+    "correctName": "Farfetchd",
+    "correctKoreanName": "파오리",
+    "issue": [
+      "name: \"Farfetch’d\" → \"Farfetchd\""
+    ]
+  },
+  {
+    "id": 188,
+    "currentName": "Skiploom",
+    "currentKoreanName": "두코",
+    "correctName": "Skiploom",
+    "correctKoreanName": "두리코",
+    "issue": [
+      "korean_name: \"두코\" → \"두리코\""
+    ]
+  },
+  {
+    "id": 210,
+    "currentName": "Granbull",
+    "currentKoreanName": "그랑블루",
+    "correctName": "Granbull",
+    "correctKoreanName": "그랑불",
+    "issue": [
+      "korean_name: \"그랑블루\" → \"그랑불\""
+    ]
+  }
+]

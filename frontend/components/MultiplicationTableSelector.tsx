@@ -1,18 +1,29 @@
 import React from 'react';
 
-interface MultiplicationTableSelectorProps {
-  selectedTable: number;
-  onTableSelect: (table: number) => void;
-  onStartProblem?: (table: number) => void;
+interface User {
+  id: string;
+  nickname: string;
+  trainerLevel: number;
+  currentRegion: string;
+  totalExperience: number;
+  caughtPokemon: number[];
   completedTables: number[];
 }
 
+interface MultiplicationTableSelectorProps {
+  user: User;
+  selectedTable: number;
+  onTableSelect: (table: number) => void;
+  onStartProblem?: (table: number) => void;
+}
+
 const MultiplicationTableSelector: React.FC<MultiplicationTableSelectorProps> = ({
+  user,
   selectedTable,
   onTableSelect,
-  onStartProblem,
-  completedTables
+  onStartProblem
 }) => {
+  const completedTables = user.completedTables;
   const tables = [2, 3, 4, 5, 6, 7, 8, 9];
 
   const getTableColor = (table: number) => {

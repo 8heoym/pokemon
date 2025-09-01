@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { MathProblem, Pokemon, UserAnswer, LearningAnalysis } from '../../../shared/types';
+import { MathProblem, Pokemon, UserAnswer, LearningAnalysis } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 export class AIProblemGenerator {

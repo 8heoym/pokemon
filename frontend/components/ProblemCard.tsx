@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PokemonImageCard from './PokemonImageCard';
 
 interface Pokemon {
   id: number;
@@ -101,17 +102,9 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-lg">
-      {/* 포켓몬 정보 */}
-      <div className="flex items-center mb-6 p-4 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg">
-        <img 
-          src={pokemon.imageUrl} 
-          alt={pokemon.koreanName}
-          className="w-16 h-16 object-contain mr-4"
-        />
-        <div>
-          <h3 className="text-xl font-bold text-gray-800">{pokemon.koreanName}</h3>
-          <p className="text-sm text-gray-600">레어도: {pokemon.rarity}</p>
-        </div>
+      {/* 포켓몬 이미지 카드 */}
+      <div className="flex justify-center mb-6">
+        <PokemonImageCard pokemon={pokemon} />
       </div>
 
       {/* 문제 */}

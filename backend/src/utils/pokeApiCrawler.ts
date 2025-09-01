@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Pokemon } from '../../../shared/types';
+import { Pokemon } from '../types';
 
 export class PokeApiCrawler {
   private baseUrl = 'https://pokeapi.co/api/v2';

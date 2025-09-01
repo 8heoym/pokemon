@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { Pokemon } from '../../../shared/types';
+import { Pokemon } from '../types';
 import { SupabasePokemonService } from '../services/SupabasePokemonService';
 import { supabase } from '../config/supabase';
 

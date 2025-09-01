@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { Pokemon as PokemonType } from '../../../shared/types';
+import { Pokemon as PokemonType } from '../types';
 
 interface PokemonDocument extends Omit<PokemonType, 'id'>, Document {
   id: number;

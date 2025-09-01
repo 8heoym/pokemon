@@ -139,6 +139,31 @@ For development debugging:
 - Frontend development tools include React DevTools support
 - API error logging configured in axios interceptors
 
+## Claude Code Rules and Guidelines
+
+### Core Principles
+- Do what has been asked; nothing more, nothing less.
+- NEVER create files unless they're absolutely necessary for achieving your goal.
+- ALWAYS prefer editing an existing file to creating a new one.
+- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+
+### Code Standards
+- NEVER assume that a given library is available, even if it is well known. Always check that this codebase already uses the given library.
+- When creating a new component, first look at existing components to see how they're written; consider framework choice, naming conventions, typing, and other conventions.
+- When editing code, first look at the code's surrounding context (especially its imports) to understand the code's choice of frameworks and libraries.
+- Always follow security best practices. Never introduce code that exposes or logs secrets and keys. Never commit secrets or keys to the repository.
+- DO NOT ADD ***ANY*** COMMENTS unless asked.
+
+### Task Management
+- Use TodoWrite tools frequently to ensure tracking tasks and giving visibility into progress.
+- Mark todos as completed as soon as you are done with a task. Do not batch up multiple tasks before marking them as completed.
+- Break down larger complex tasks into smaller steps.
+
+### Development Best Practices
+- Run lint and typecheck commands (npm run lint, npm run typecheck, ruff, etc.) after completing tasks to ensure code is correct.
+- NEVER commit changes unless the user explicitly asks you to.
+
 ## TheGoldenRule
-- When unsure about implementation details,ALWAYS ask the developer.
-- 코드를 변경하기 전에 개발자에게 물어보아야 합니다.
+- When unsure about implementation details, ALWAYS ask the developer.
+- 불필요한 리포트, 피드백 시스템을 만드는 것을 지양합니다.
+- 
