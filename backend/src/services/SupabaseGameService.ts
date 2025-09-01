@@ -242,7 +242,7 @@ export class SupabaseGameService {
       console.log('=== Pokedex Request Success ===');
       return result;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('=== Pokedex Request Error ===');
       console.error('Error type:', error?.constructor?.name);
       console.error('Error message:', error?.message);
