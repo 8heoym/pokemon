@@ -654,6 +654,106 @@ export class SupabasePokemonService {
     }, {});
   }
 
+  async getPokemonWithPagination(page: number = 1, limit: number = 50, filter?: {
+    caught?: number[],
+    uncaught?: number[],
+    region?: string,
+    rarity?: string
+  }): Promise<{
+    pokemon: Pokemon[];
+    totalCount: number;
+    currentPage: number;
+    totalPages: number;
+    hasNextPage: boolean;
+  }> {
+    try {
+      const offset = (page - 1) * limit;
+      
+      let query = supabase.from('pokemon').select('*');
+      let countQuery = supabase.from('pokemon').select('*', { count: 'exact', head: true });
+
+      // Apply filters
+      if (filter) {
+        if (filter.caught && filter.caught.length > 0) {
+          query = query.in('id', filter.caught);
+          countQuery = countQuery.in('id', filter.caught);
+        }
+        
+        if (filter.uncaught && filter.uncaught.length > 0) {
+          query = query.not('id', 'in', `(${filter.uncaught.join(',')})`);
+          countQuery = countQuery.not('id', 'in', `(${filter.uncaught.join(',')})`);
+        }
+        
+        if (filter.region) {
+          query = query.eq('region', filter.region);
+          countQuery = countQuery.eq('region', filter.region);
+        }
+        
+        if (filter.rarity) {
+          query = query.eq('rarity', filter.rarity);
+          countQuery = countQuery.eq('rarity', filter.rarity);
+        }
+      }
+
+      // Get total count
+      const { count, error: countError } = await countQuery;
+      if (countError) throw countError;
+      
+      const totalCount = count || 0;
+      const totalPages = Math.ceil(totalCount / limit);
+
+      // Get paginated data
+      const { data, error } = await query
+        .order('id', { ascending: true })
+        .range(offset, offset + limit - 1);
+
+      if (error) throw error;
+
+      return {
+        pokemon: this.convertToSharedType(data || []),
+        totalCount,
+        currentPage: page,
+        totalPages,
+        hasNextPage: page < totalPages
+      };
+      
+    } catch (error) {
+      console.error('페이지네이션 포켓몬 조회 실패:', error);
+      throw error;
+    }
+  }
+
+  async getBatchPokemon(pokemonIds: number[], limit: number = 50, offset: number = 0): Promise<{
+    pokemon: Pokemon[];
+    totalCount: number;
+  }> {
+    try {
+      if (pokemonIds.length === 0) {
+        return { pokemon: [], totalCount: 0 };
+      }
+
+      // Slice the IDs for pagination
+      const slicedIds = pokemonIds.slice(offset, offset + limit);
+      
+      const { data, error } = await supabase
+        .from('pokemon')
+        .select('*')
+        .in('id', slicedIds)
+        .order('id', { ascending: true });
+
+      if (error) throw error;
+
+      return {
+        pokemon: this.convertToSharedType(data || []),
+        totalCount: pokemonIds.length
+      };
+      
+    } catch (error) {
+      console.error('배치 포켓몬 조회 실패:', error);
+      throw error;
+    }
+  }
+
   private convertToSharedType(pokemonRows: PokemonRow[]): Pokemon[] {
     return pokemonRows.map(row => ({
       id: row.id,

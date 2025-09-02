@@ -8,7 +8,7 @@ import { MULTIPLICATION_ORDER, calculateLevel, getLevelProgress } from '@/utils/
 import UserProfile from './UserProfile';
 import MultiplicationTableSelector from './MultiplicationTableSelector';
 import ProblemCard from './ProblemCard';
-import PokedexModal from './PokedexModal';
+import PokedexModalInfiniteScroll from './PokedexModalInfiniteScroll';
 import LeaderboardModal from './LeaderboardModal';
 import LoadingScreen from './LoadingScreen';
 import Confetti from 'react-confetti';
@@ -190,7 +190,7 @@ export default function GameDashboard({
       </AnimatePresence>
 
       {/* 포켓몬 도감 모달 */}
-      <PokedexModal
+      <PokedexModalInfiniteScroll
         isOpen={showPokedex}
         userId={user.id}
         onClose={() => setShowPokedex(false)}

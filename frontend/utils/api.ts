@@ -43,6 +43,9 @@ export const userAPI = {
   getPokedex: (userId: string) => 
     api.get(`/users/${userId}/pokedex`),
 
+  getPokedexPaginated: (userId: string, page: number = 1, limit: number = 50, filter: string = 'all') => 
+    api.get(`/users/${userId}/pokedex/paginated`, { params: { page, limit, filter } }),
+
   catchPokemon: (userId: string, pokemonId: number) => 
     api.post(`/users/${userId}/catch`, { pokemonId }),
 };

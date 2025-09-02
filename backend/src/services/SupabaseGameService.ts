@@ -459,6 +459,115 @@ export class SupabaseGameService {
     return this.getPokedex(userId);
   }
 
+  async getPokedexPaginated(userId: string, page: number = 1, limit: number = 50, filter: string = 'all') {
+    try {
+      console.log(`=== Paginated Pokedex Request: userId=${userId}, page=${page}, limit=${limit}, filter=${filter} ===`);
+      
+      const user = await this.getUserById(userId);
+      if (!user) {
+        throw new Error('사용자를 찾을 수 없습니다.');
+      }
+
+      const offset = (page - 1) * limit;
+      let pokemonIds: number[] = [];
+      let totalCount = 0;
+      
+      // 필터에 따라 포켓몬 ID 목록 결정
+      switch (filter) {
+        case 'caught':
+          pokemonIds = user.caughtPokemon || [];
+          totalCount = pokemonIds.length;
+          break;
+        case 'uncaught':
+          const allIds = Array.from({ length: 842 }, (_, i) => i + 1);
+          pokemonIds = allIds.filter(id => !user.caughtPokemon?.includes(id));
+          totalCount = pokemonIds.length;
+          break;
+        default: // 'all'
+          pokemonIds = Array.from({ length: 842 }, (_, i) => i + 1);
+          totalCount = 842;
+      }
+
+      // 페이지네이션 적용
+      const paginatedIds = pokemonIds.slice(offset, offset + limit);
+      const totalPages = Math.ceil(totalCount / limit);
+      const hasNextPage = page < totalPages;
+
+      // 포켓몬 데이터 조회 (잡은 포켓몬만 상세 정보 포함)
+      let pokemonData: any[] = [];
+      
+      if (filter === 'caught' && paginatedIds.length > 0) {
+        // 잡은 포켓몬의 경우 상세 정보 포함
+        const { data: pokemon, error } = await supabase
+          .from('pokemon')
+          .select('*')
+          .in('id', paginatedIds)
+          .order('id');
+        
+        if (error) throw error;
+        pokemonData = pokemon || [];
+      } else if (filter === 'all') {
+        // 전체 보기의 경우 잡은 포켓몬만 상세 정보 포함
+        const caughtIds = paginatedIds.filter(id => user.caughtPokemon?.includes(id));
+        
+        if (caughtIds.length > 0) {
+          const { data: pokemon, error } = await supabase
+            .from('pokemon')
+            .select('*')
+            .in('id', caughtIds)
+            .order('id');
+          
+          if (error) throw error;
+          pokemonData = pokemon || [];
+        }
+      }
+
+      // 응답 데이터 구성
+      const entries = paginatedIds.map(pokemonId => {
+        const pokemon = pokemonData.find(p => p.id === pokemonId);
+        const isCaught = user.caughtPokemon?.includes(pokemonId) || false;
+        
+        return {
+          pokemonId,
+          caught: isCaught,
+          pokemon: isCaught && pokemon ? {
+            id: pokemon.id,
+            name: pokemon.name,
+            koreanName: pokemon.korean_name,
+            imageUrl: pokemon.image_url,
+            rarity: pokemon.rarity,
+            region: pokemon.region,
+            characteristics: pokemon.characteristics
+          } : null
+        };
+      });
+
+      console.log(`Paginated pokedex success: ${entries.length} entries, hasNextPage=${hasNextPage}`);
+      
+      return {
+        entries,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalCount,
+          hasNextPage,
+          hasPrevPage: page > 1,
+          limit
+        },
+        userInfo: {
+          level: user.trainerLevel,
+          region: user.currentRegion,
+          totalCaught: user.caughtPokemon?.length || 0,
+          completedTables: user.completedTables
+        }
+      };
+
+    } catch (error) {
+      console.error('페이지네이션 도감 조회 실패:', error);
+      throw error;
+    }
+  }
+
   private convertUserAnswerToSharedType(answerRow: UserAnswerRow): UserAnswer {
     return {
       id: answerRow.id,

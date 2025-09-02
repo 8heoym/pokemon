@@ -130,4 +130,20 @@ export class SimpleGameController {
       res.status(500).json({ error: '포켓몬 일괄 조회 중 오류가 발생했습니다.' });
     }
   }
+
+  async getPokedexPaginated(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const filter = req.query.filter as string; // 'all' | 'caught' | 'uncaught'
+      
+      const result = await this.gameService.getPokedexPaginated(userId, page, limit, filter);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('페이지네이션 도감 조회 실패:', error);
+      res.status(500).json({ error: '페이지네이션 도감 조회 중 오류가 발생했습니다.' });
+    }
+  }
 }

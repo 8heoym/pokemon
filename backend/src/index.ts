@@ -52,6 +52,28 @@ app.get('/api/pokemon', async (req, res) => {
   }
 });
 
+// 페이지네이션된 포켓몬 조회 API
+app.get('/api/pokemon/paginated', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100); // 최대 100개까지
+    const filterType = req.query.filter as string;
+    const region = req.query.region as string;
+    const rarity = req.query.rarity as string;
+    
+    let filter: any = {};
+    
+    if (region) filter.region = region;
+    if (rarity) filter.rarity = rarity;
+    
+    const result = await pokemonService.getPokemonWithPagination(page, limit, filter);
+    res.json(result);
+  } catch (error) {
+    console.error('페이지네이션 포켓몬 조회 실패:', error);
+    res.status(500).json({ error: '페이지네이션 포켓몬 조회 실패' });
+  }
+});
+
 app.get('/api/pokemon/stats', async (req, res) => {
   try {
     const stats = await pokemonService.getPokemonStats();
@@ -256,6 +278,7 @@ app.post('/api/users', (req, res) => gameController.createUser(req, res));
 app.get('/api/users/:userId', (req, res) => gameController.getUser(req, res));
 app.post('/api/users/:userId/catch', (req, res) => gameController.catchPokemon(req, res));
 app.get('/api/users/:userId/pokedex', (req, res) => gameController.getPokedex(req, res));
+app.get('/api/users/:userId/pokedex/paginated', (req, res) => gameController.getPokedexPaginated(req, res));
 app.get('/api/users/:userId/stats', (req, res) => gameController.getUserStats(req, res));
 app.get('/api/leaderboard', (req, res) => gameController.getLeaderboard(req, res));
 app.post('/api/pokemon/batch', (req, res) => gameController.getPokemonByIds(req, res));
