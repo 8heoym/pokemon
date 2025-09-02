@@ -171,7 +171,7 @@ const PokedexModalInfiniteScroll: React.FC<PokedexModalProps> = ({ isOpen, userI
     );
   }
 
-  const completionRate = userInfo ? ((userInfo.totalCaught / pagination?.totalCount || 842) * 100).toFixed(1) : '0.0';
+  const completionRate = userInfo ? ((userInfo.totalCaught / (pagination?.totalCount ?? 842)) * 100).toFixed(1) : '0.0';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
