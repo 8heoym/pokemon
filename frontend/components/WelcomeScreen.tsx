@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 interface WelcomeScreenProps {
   onCreateUser: (nickname: string) => Promise<void>;
@@ -59,16 +60,17 @@ export default function WelcomeScreen({
           {/* 포켓몬 로고 스타일 */}
           <div className="relative mb-6">
             <div className="pokemon-logo-container flex justify-center items-center mb-4">
-              <div className="pokemon-logo-text text-5xl font-black tracking-wider transform -rotate-3 hover:rotate-0 transition-transform duration-300 cursor-pointer"
-                   style={{
-                     background: 'linear-gradient(45deg, #FFD700, #FFA500, #FFD700)',
-                     WebkitBackgroundClip: 'text',
-                     WebkitTextFillColor: 'transparent',
-                     textShadow: '3px 3px 0px #1E3A8A, -1px -1px 0px #1E3A8A, 1px -1px 0px #1E3A8A, -1px 1px 0px #1E3A8A',
-                     filter: 'drop-shadow(4px 4px 8px rgba(30, 58, 138, 0.3))'
-                   }}>
-                POKÉMON
-              </div>
+              <motion.div
+                className="transform hover:scale-105 transition-transform duration-300 cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <img 
+                  src="https://logos-world.net/wp-content/uploads/2020/05/Pokemon-Logo.png"
+                  alt="Pokémon Logo"
+                  className="h-20 md:h-24 lg:h-28 w-auto drop-shadow-lg"
+                />
+              </motion.div>
             </div>
             
             {/* 데코레이션 요소들 */}
