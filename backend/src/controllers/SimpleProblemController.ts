@@ -1,17 +1,16 @@
 import { Request, Response } from 'express';
-import { AIProblemGenerator } from '../services/AIProblemGenerator';
-import { SupabasePokemonService } from '../services/SupabasePokemonService';
+import { HybridProblemService } from '../services/HybridProblemService';
+import { ProblemTemplateService } from '../services/ProblemTemplateService';
 import { SupabaseGameService } from '../services/SupabaseGameService';
 
 export class SimpleProblemController {
-  private aiGenerator: AIProblemGenerator;
-  private pokemonService: SupabasePokemonService;
+  private hybridService: HybridProblemService;
+  private templateService: ProblemTemplateService;
   private gameService: SupabaseGameService;
-  private problemCache: Map<string, { answer: number; equation: string }> = new Map();
 
   constructor() {
-    this.aiGenerator = new AIProblemGenerator();
-    this.pokemonService = new SupabasePokemonService();
+    this.hybridService = new HybridProblemService();
+    this.templateService = new ProblemTemplateService();
     this.gameService = new SupabaseGameService();
   }
 
@@ -31,54 +30,14 @@ export class SimpleProblemController {
         });
       }
 
-      // 해당 구구단의 랜덤 포켓몬 선택 (재시도 로직 포함)
-      let pokemon = null;
-      let retryCount = 0;
-      const maxRetries = 3;
-      
-      while (!pokemon && retryCount < maxRetries) {
-        try {
-          pokemon = await this.pokemonService.getRandomPokemonByTable(multiplicationTable);
-          if (pokemon) break;
-        } catch (error: any) {
-          retryCount++;
-          console.error(`포켓몬 조회 실패 (${retryCount}/${maxRetries}):`, error?.message);
-          
-          if (error?.code === '57014' && retryCount < maxRetries) {
-            // Query timeout - wait and retry
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            continue;
-          }
-          
-          if (retryCount >= maxRetries) {
-            throw error;
-          }
-        }
-      }
-      
-      if (!pokemon) {
-        return res.status(404).json({ 
-          error: '해당 구구단의 포켓몬을 찾을 수 없습니다.' 
-        });
-      }
-
-      // AI 문제 생성 (간단한 버전)
-      const problem = await this.aiGenerator.generatePersonalizedProblem(
-        pokemon,
+      // 하이브리드 서비스로 문제 생성
+      const result = await this.hybridService.generateProblem(
+        userId,
         multiplicationTable,
         difficulty
       );
 
-      // 문제 정보를 캐시에 저장
-      this.problemCache.set(problem.id, {
-        answer: problem.answer,
-        equation: problem.equation
-      });
-
-      res.json({
-        problem,
-        pokemon
-      });
+      res.json(result);
 
     } catch (error) {
       console.error('문제 생성 실패:', error);
@@ -98,60 +57,26 @@ export class SimpleProblemController {
         });
       }
 
-      // 캐시에서 문제 정답 조회
-      const cachedProblem = this.problemCache.get(problemId);
-      let correctAnswer = 0;
-      let isCorrect = false;
-
-      if (cachedProblem) {
-        correctAnswer = cachedProblem.answer;
-        isCorrect = parseInt(answer) === correctAnswer;
-        
-        // 사용된 문제는 캐시에서 제거 (메모리 절약)
-        this.problemCache.delete(problemId);
-      } else {
-        // 캐시에서 찾을 수 없는 경우 (서버 재시작 등)
-        console.error(`Problem ${problemId} not found in cache`);
-        return res.status(404).json({ 
-          error: '문제를 찾을 수 없습니다.', 
-          needsRetry: true,
-          requireNewProblem: true
-        });
-      }
-
-      // 답안 기록
-      const userAnswer = {
+      // 하이브리드 서비스로 답안 처리
+      const result = await this.hybridService.submitAnswer(
         userId,
         problemId,
-        userAnswer: parseInt(answer),
-        correctAnswer,
-        isCorrect,
+        parseInt(answer),
         timeSpent,
-        hintsUsed,
-        attemptedAt: new Date()
-      };
+        hintsUsed
+      );
 
-      // await this.gameService.recordAnswer(userAnswer); // 임시로 주석처리 - 테이블 미생성
-
-      // 정답일 경우 포켓몬 잡기 시도
-      let pokemonCaught = null;
-      let experienceGained = 0;
-      if (isCorrect) {
-        const randomPokemonId = Math.floor(Math.random() * 842) + 1; // 1-842 (전체 포켓몬 범위)
+      // 정답일 경우 포켓몬 잡기 시도 (기존 로직 유지)
+      if (result.isCorrect) {
+        const randomPokemonId = Math.floor(Math.random() * 842) + 1;
         const catchResult = await this.gameService.catchPokemon(userId, randomPokemonId);
         if (catchResult.success) {
-          pokemonCaught = catchResult.pokemon;
-          experienceGained = catchResult.experienceGained;
+          result.pokemonCaught = catchResult.pokemon;
+          result.experienceGained = catchResult.experienceGained;
         }
       }
 
-      res.json({
-        isCorrect,
-        correctAnswer,
-        pokemonCaught,
-        experienceGained,
-        feedback: isCorrect ? '정답입니다! 🎉' : '아쉽지만 틀렸습니다. 다시 도전해보세요!'
-      });
+      res.json(result);
 
     } catch (error) {
       console.error('답안 제출 실패:', error);
@@ -165,26 +90,17 @@ export class SimpleProblemController {
     try {
       const { problemId, userId } = req.params;
 
-      // problemId 유효성 검사
-      const cachedProblem = this.problemCache.get(problemId);
-      if (!cachedProblem) {
+      // 세션에서 문제 조회
+      const problemInstance = await this.templateService.getProblemFromSession(userId, problemId);
+      if (!problemInstance) {
         return res.status(404).json({
           error: '문제를 찾을 수 없습니다.'
         });
       }
 
-      // 간단한 힌트 제공
-      const hints = [
-        '차근차근 계산해보세요!',
-        '손가락으로 세어보는 것도 좋은 방법이에요.',
-        '구구단을 외워보세요!',
-        '그림을 그려서 생각해보세요.'
-      ];
-
-      const randomHint = hints[Math.floor(Math.random() * hints.length)];
-
+      // 문제의 기본 힌트 반환
       res.json({
-        hint: randomHint
+        hint: problemInstance.hint
       });
 
     } catch (error) {

@@ -1,0 +1,34 @@
+{
+  "metadata": {
+    "startTime": "2025-09-03T17:45:44+09:00",
+    "endTime": "",
+    "baseUrl": "http://localhost:3001",
+    "totalDuration": 0
+  },
+  "loadTests": [],
+  "memoryTests": [],
+  "concurrencyTests": [
+    {
+      "concurrentUsers": 10,
+      "requestsPerUser": 5,
+      "totalRequests": 50,
+      "totalSuccess": 0,
+      "successRate": 0
+    },
+    {
+      "concurrentUsers": 25,
+      "requestsPerUser": 3,
+      "totalRequests": 75,
+      "totalSuccess": 0,
+      "successRate": 0
+    }
+  ],
+  "enduranceTests": [],
+  "summary": {
+    "averageResponseTime": 0,
+    "maxResponseTime": 0,
+    "minResponseTime": 999999,
+    "errorRate": 0,
+    "recommendationResult": ""
+  }
+}

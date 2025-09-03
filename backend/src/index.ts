@@ -6,6 +6,7 @@ import { SupabasePokemonService } from './services/SupabasePokemonService';
 import { SimpleProblemController } from './controllers/SimpleProblemController';
 import { SimpleGameController } from './controllers/SimpleGameController';
 import { PokemonImageDownloader } from './utils/imageDownloader';
+import { TemplateSystemInitializer } from './utils/initializeTemplateSystem';
 
 // 환경변수 로드
 dotenv.config();
@@ -21,6 +22,7 @@ app.use(express.json());
 const pokemonService = new SupabasePokemonService();
 const problemController = new SimpleProblemController();
 const gameController = new SimpleGameController();
+const templateInitializer = new TemplateSystemInitializer();
 
 // 기본 라우트
 app.get('/', (req, res) => {
@@ -149,6 +151,16 @@ app.post('/api/pokemon/initialize', async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ error: '데이터베이스 초기화 실패' });
+  }
+});
+
+// 템플릿 시스템 초기화 API
+app.post('/api/templates/initialize', async (req, res) => {
+  try {
+    const result = await templateInitializer.initializeDatabase();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: '템플릿 시스템 초기화 실패' });
   }
 });
 
