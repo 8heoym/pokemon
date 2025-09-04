@@ -169,11 +169,19 @@ export class HybridProblemService {
         difficulty
       );
 
-      // AI 생성 문제도 세션에 저장
-      const problemInstance = this.convertAIProblemToRendered(problem, pokemon, multiplicationTable);
-      await this.templateService.saveToSession(userId, problemInstance);
+      // AI 생성 문제를 RenderedProblem 형태로 변환 후 세션에 저장
+      // AI 생성 문제를 RenderedProblem 형태로 변환
+      const renderedProblem = this.convertAIProblemToRendered(
+        problem,
+        pokemon,
+        multiplicationTable
+      );
 
-      console.log(`AI 문제 생성 완료: ${pokemon.koreanName}`);
+      // 세션에 저장
+      await this.templateService.saveToSession(userId, renderedProblem);
+
+
+      console.log(`AI 문제 생성 및 세션 저장 완료: ${pokemon.koreanName}`);
 
       return {
         problem,
@@ -393,7 +401,7 @@ export class HybridProblemService {
       multiplicationTable: multiplicationTable,
       pokemonId: pokemon.id,
       difficulty: problem.difficulty,
-      templateId: 'ai-generated', // AI 생성임을 표시
+      templateId: uuidv4(), // AI 생성 전용 임시 템플릿 ID
       variablesUsed: {
         a: multiplicationTable,
         b: problem.answer / multiplicationTable,

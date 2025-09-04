@@ -7,13 +7,14 @@ export class AIProblemGenerator {
 
   constructor() {
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY가 환경변수에 설정되지 않았습니다.');
+    if (apiKey) {
+      this.anthropic = new Anthropic({
+        apiKey: apiKey,
+      });
+    } else {
+      console.warn('ANTHROPIC_API_KEY가 설정되지 않음. Mock 모드로 실행합니다.');
+      this.anthropic = null as any; // Mock 모드에서는 사용하지 않음
     }
-    
-    this.anthropic = new Anthropic({
-      apiKey: apiKey,
-    });
   }
 
   async generatePersonalizedProblem(
