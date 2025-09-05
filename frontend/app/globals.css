@@ -35,7 +35,7 @@ a {
   }
 }
 
-/* 포켓몬 테마 배경 */
+/* Legacy Pokemon Theme Background */
 .pokemon-bg {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
@@ -148,4 +148,479 @@ a {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}/* Force deployment #오후 */
+}
+
+/* ========== WELCOME SCREEN STYLES ========== */
+
+/* Welcome Container - Pokemon World Background */
+.welcome-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, 
+    #667eea 0%, 
+    #764ba2 25%, 
+    #667eea 50%, 
+    #f093fb 75%, 
+    #f5576c 100%
+  );
+  background-size: 400% 400%;
+  animation: pokemonGradient 8s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes pokemonGradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Pokemon Floating Particles */
+.pokemon-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 3D Pokeball Floating Animation */
+.pokeball-3d {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  margin: 0 auto;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+}
+
+.pokeball-top {
+  width: 80px;
+  height: 40px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  border-radius: 80px 80px 0 0;
+  position: relative;
+  z-index: 3;
+}
+
+.pokeball-bottom {
+  width: 80px;
+  height: 40px;
+  background: linear-gradient(135deg, #ffffff 0%, #f1f2f6 100%);
+  border-radius: 0 0 80px 80px;
+  position: relative;
+  z-index: 3;
+}
+
+.pokeball-center {
+  width: 80px;
+  height: 8px;
+  background: #2f3640;
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 4;
+}
+
+.pokeball-center::after {
+  content: '';
+  width: 24px;
+  height: 24px;
+  background: radial-gradient(circle, #ffffff 30%, #ddd 70%);
+  border: 4px solid #2f3640;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Welcome Card - Apple Glass Morphism */
+.welcome-card {
+  max-width: 420px;
+  width: 100%;
+  padding: 3rem 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 25px 45px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  position: relative;
+  z-index: 10;
+}
+
+.welcome-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  border-radius: 24px;
+  pointer-events: none;
+}
+
+/* Hero Title */
+.hero-title {
+  font-size: 3.5rem;
+  font-weight: 900;
+  line-height: 1.1;
+  background: linear-gradient(135deg, 
+    #ffff00 0%, 
+    #ff6b35 25%, 
+    #f7931e 50%, 
+    #ffff00 75%, 
+    #ff6b35 100%
+  );
+  background-size: 200% 200%;
+  animation: pokemonTextShine 3s ease-in-out infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 30px rgba(255, 255, 0, 0.5);
+}
+
+@keyframes pokemonTextShine {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  line-height: 1.5;
+}
+
+/* Apple-style Mode Cards */
+.mode-card {
+  padding: 1.5rem;
+  border-radius: 20px;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.mode-card-active-red {
+  background: linear-gradient(135deg, 
+    rgba(239, 68, 68, 0.9) 0%, 
+    rgba(220, 38, 38, 0.9) 100%
+  );
+  color: white;
+  box-shadow: 
+    0 10px 25px rgba(239, 68, 68, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.mode-card-active-blue {
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.9) 0%, 
+    rgba(37, 99, 235, 0.9) 100%
+  );
+  color: white;
+  box-shadow: 
+    0 10px 25px rgba(59, 130, 246, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.mode-card-inactive {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.mode-card-inactive:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.card-content {
+  position: relative;
+  z-index: 2;
+}
+
+.ios-chevron {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  opacity: 0.6;
+  color: currentColor;
+}
+
+/* Input Styles */
+.input-section {
+  position: relative;
+}
+
+.input-label {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.75rem;
+  text-align: left;
+}
+
+.input-container {
+  position: relative;
+}
+
+.apple-input {
+  width: 100%;
+  padding: 1.25rem 3rem 1.25rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  color: #1f2937;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.apple-input:focus {
+  border-color: rgba(59, 130, 246, 0.8);
+  outline: none;
+  box-shadow: 
+    0 0 0 4px rgba(59, 130, 246, 0.1),
+    0 8px 25px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.apple-input::placeholder {
+  color: rgba(107, 114, 128, 0.7);
+}
+
+.input-icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.5rem;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.input-help {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.5rem;
+  text-align: left;
+  line-height: 1.4;
+}
+
+/* Apple-style Action Button */
+.apple-button {
+  width: 100%;
+  padding: 1.25rem 2rem;
+  border-radius: 16px;
+  border: none;
+  font-size: 1.125rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, 
+    #ffff00 0%, 
+    #ff6b35 50%, 
+    #f7931e 100%
+  );
+  color: #1f2937;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 10px 25px rgba(255, 107, 53, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.apple-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.apple-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.2) 0%, 
+    transparent 50%, 
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.apple-button:hover::before {
+  opacity: 1;
+}
+
+.button-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* Pokeball Loading Spinner */
+.pokeball-spinner {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, #ff0000 50%, #ffffff 50%);
+  position: relative;
+  border: 2px solid #000;
+}
+
+.pokeball-spinner::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: #ffffff;
+  border-radius: 50%;
+  border: 2px solid #000;
+}
+
+/* Features Grid */
+.features-grid {
+  margin-top: 2rem;
+}
+
+.feature-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.feature-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.feature-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.feature-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Bottom Info */
+.bottom-info {
+  margin-top: 2rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.bottom-info p {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+}
+
+/* Responsive Design for Mobile */
+@media (max-width: 480px) {
+  .welcome-card {
+    margin: 1rem;
+    padding: 2rem 1.5rem;
+  }
+  
+  .hero-title {
+    font-size: 2.5rem;
+  }
+  
+  .pokeball-3d {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .pokeball-top, .pokeball-bottom {
+    width: 60px;
+    height: 30px;
+  }
+  
+  .pokeball-center {
+    width: 60px;
+    top: 27px;
+  }
+}
+
+/* Error Alert Styles */
+.error-alert {
+  background: rgba(239, 68, 68, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.error-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.error-icon {
+  font-size: 1.25rem;
+}
+
+.error-text {
+  color: rgba(239, 68, 68, 0.9);
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Additional iOS-style Haptic Feedback Effects */
+@keyframes hapticFeedback {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.mode-card:active {
+  animation: hapticFeedback 0.1s ease-out;
+}
+
+.apple-button:active {
+  animation: hapticFeedback 0.1s ease-out;
+}
+
+/* Additional Pokemon Elements */
+@keyframes pokemonGlow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(255, 255, 0, 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 30px rgba(255, 255, 0, 0.6);
+  }
+}
+
+.pokeball-3d:hover {
+  animation: pokemonGlow 2s ease-in-out infinite;
+}
+
+/* Force deployment #오후 */

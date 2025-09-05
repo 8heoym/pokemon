@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
 interface WelcomeScreenProps {
@@ -20,270 +20,386 @@ export default function WelcomeScreen({
   const [nickname, setNickname] = useState('');
   const [userId, setUserId] = useState('');
   const [mode, setMode] = useState<'new' | 'existing'>('new');
+  const [particles, setParticles] = useState<Array<{id: number, emoji: string, x: number, y: number}>>([]);
+
+  useEffect(() => {
+    const emojis = ['⚡', '🔥', '💧', '🌿', '⭐', '🌙'];
+    const newParticles = Array.from({ length: 12 }, (_, i) => ({
+      id: i,
+      emoji: emojis[Math.floor(Math.random() * emojis.length)],
+      x: Math.random() * 100,
+      y: Math.random() * 100
+    }));
+    setParticles(newParticles);
+  }, []);
+
+  const [formError, setFormError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError('');
     
     if (mode === 'new') {
       if (nickname.trim().length === 0) {
-        alert('닉네임을 입력해주세요!');
+        setFormError('닉네임을 입력해주세요! ⚡');
         return;
       }
       if (nickname.trim().length > 20) {
-        alert('닉네임은 20자 이하로 입력해주세요!');
+        setFormError('닉네임은 20자 이하로 입력해주세요! 😅');
         return;
       }
       await onCreateUser(nickname.trim());
     } else {
       if (userId.trim().length === 0) {
-        alert('닉네임을 입력해주세요!');
+        setFormError('닉네임을 입력해주세요! 🔍');
         return;
       }
       await onLoadUser(userId.trim());
     }
   };
 
+  const handleModeChange = (newMode: 'new' | 'existing') => {
+    setMode(newMode);
+    setFormError('');
+    setNickname('');
+    setUserId('');
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <motion.div 
-        className="pokemon-card max-w-md w-full p-8 text-center"
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        {/* 포켓몬 로고 및 타이틀 */}
+    <div className="welcome-container">
+      {/* Interactive Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="pokemon-particles">
+          {particles.map((particle) => (
+            <motion.div
+              key={particle.id}
+              className="absolute text-6xl opacity-10"
+              style={{
+                left: `${particle.x}%`,
+                top: `${particle.y}%`
+              }}
+              initial={{ 
+                scale: 0.5 + Math.random() * 0.5,
+                rotate: 0
+              }}
+              animate={{
+                x: [0, (Math.random() - 0.5) * 200],
+                y: [0, (Math.random() - 0.5) * 200],
+                rotate: [0, 360]
+              }}
+              transition={{
+                duration: 20 + Math.random() * 10,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+            >
+              {particle.emoji}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative min-h-screen flex items-center justify-center p-4">
+        {/* Floating Pokeball */}
         <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
+          className="absolute top-20 left-1/2 transform -translate-x-1/2"
+          initial={{ y: 0 }}
+          animate={{ y: [-10, 10, -10] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
-          {/* 포켓몬 로고 스타일 */}
-          <div className="relative mb-6">
-            <div className="pokemon-logo-container flex justify-center items-center mb-4">
-              <motion.div
-                className="transform hover:scale-105 transition-transform duration-300 cursor-pointer"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <img 
-                  src="https://logos-world.net/wp-content/uploads/2020/05/Pokemon-Logo.png"
-                  alt="Pokémon Logo"
-                  className="h-20 md:h-24 lg:h-28 w-auto drop-shadow-lg"
-                />
-              </motion.div>
-            </div>
-            
-            {/* 데코레이션 요소들 */}
-            <div className="absolute -top-2 -left-4 animate-bounce delay-100">
-              <span className="text-2xl">⚡</span>
-            </div>
-            <div className="absolute -top-2 -right-4 animate-bounce delay-300">
-              <span className="text-2xl">🔥</span>
-            </div>
-            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 animate-bounce delay-500">
-              <span className="text-2xl">⭐</span>
-            </div>
+          <div className="pokeball-3d">
+            <div className="pokeball-top"></div>
+            <div className="pokeball-bottom"></div>
+            <div className="pokeball-center"></div>
           </div>
-          
-          <motion.h1 
-            className="text-3xl font-bold mb-2 font-pokemon"
-            style={{
-              background: 'linear-gradient(45deg, #3B82F6, #8B5CF6, #EC4899)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            수학 모험 게임
-          </motion.h1>
-          
-          <motion.p 
-            className="text-gray-600 mb-8 text-lg font-medium"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
-          >
-            🎮 포켓몬과 함께 구구단을 마스터하자! 🎯
-          </motion.p>
         </motion.div>
 
-        {/* 포켓볼 스타일 모드 선택 */}
         <motion.div 
-          className="mb-6"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
+          className="welcome-card"
+          initial={{ scale: 0.8, opacity: 0, y: 50 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <div className="flex gap-4 mb-4">
-            {/* 새로 시작하기 - 포켓볼 스타일 */}
-            <motion.button
-              type="button"
-              onClick={() => setMode('new')}
-              className={`flex-1 py-4 px-6 font-bold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 ${
-                mode === 'new'
-                  ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-red-300'
-                  : 'bg-gradient-to-r from-gray-100 to-white text-red-500 border-2 border-red-200 hover:from-red-50 hover:to-red-100'
-              }`}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.95 }}
+          {/* Hero Title Section */}
+          <motion.div
+            initial={{ y: -30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
+            className="mb-8"
+          >
+            <motion.h1 
+              className="hero-title mb-4"
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 400 }}
             >
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-2xl">⚪</span>
-                <span>새로 시작하기</span>
-              </div>
-              <div className="text-xs mt-1 opacity-80">
-                새로운 트레이너가 되어보세요!
-              </div>
-            </motion.button>
+              포켓몬
+              <span className="block text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-red-500 to-purple-600">
+                수학 모험
+              </span>
+            </motion.h1>
             
-            {/* 이어서 하기 - 몬스터볼 스타일 */}
-            <motion.button
-              type="button"
-              onClick={() => setMode('existing')}
-              className={`flex-1 py-4 px-6 font-bold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 ${
-                mode === 'existing'
-                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-blue-300'
-                  : 'bg-gradient-to-r from-gray-100 to-white text-blue-500 border-2 border-blue-200 hover:from-blue-50 hover:to-blue-100'
-              }`}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-2xl">🔵</span>
-                <span>이어서 하기</span>
-              </div>
-              <div className="text-xs mt-1 opacity-80">
-                이전 모험을 계속하세요!
-              </div>
-            </motion.button>
-          </div>
-        </motion.div>
-
-        {/* 입력 폼 */}
-        <motion.form 
-          onSubmit={handleSubmit}
-          className="space-y-4"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-        >
-          {mode === 'new' ? (
-            <div>
-              <label className="block text-left font-bold text-gray-700 mb-2">
-                트레이너 닉네임
-              </label>
-              <input
-                type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="예: 지우, 웅이, 이슬이..."
-                className="input-pokemon"
-                style={{ color: '#000000' }}
-                maxLength={20}
-                disabled={isLoading}
-              />
-              <p className="text-sm text-gray-500 mt-1 text-left">
-                🎮 포켓몬 세계에서 사용할 이름을 입력해주세요
-              </p>
-            </div>
-          ) : (
-            <div>
-              <label className="block text-left font-bold text-gray-700 mb-2">
-                닉네임
-              </label>
-              <input
-                type="text"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="이전에 사용한 닉네임을 입력하세요"
-                className="input-pokemon"
-                style={{ color: '#000000' }}
-                disabled={isLoading}
-                maxLength={20}
-              />
-              <p className="text-sm text-gray-500 mt-1 text-left">
-                🔍 이전에 생성한 닉네임을 입력하면 계속 플레이할 수 있어요
-              </p>
-            </div>
-          )}
-
-          {/* 에러 메시지 */}
-          {error && (
-            <motion.div 
-              className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded"
+            <motion.p 
+              className="subtitle"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
             >
-              {error}
-            </motion.div>
-          )}
+              지우와 피카츄와 함께하는 구구단 마스터 여행
+            </motion.p>
+          </motion.div>
 
-          {/* 포켓몬 스타일 제출 버튼 */}
-          <motion.button
-            type="submit"
-            disabled={isLoading}
-            className={`w-full py-4 px-6 rounded-xl font-bold text-lg shadow-lg transition-all duration-300 transform ${
-              isLoading 
-                ? 'opacity-50 cursor-not-allowed bg-gray-400' 
-                : mode === 'new'
-                  ? 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 text-black shadow-yellow-300 hover:scale-105 hover:shadow-xl'
-                  : 'bg-gradient-to-r from-green-400 via-green-500 to-green-600 hover:from-green-500 hover:via-green-600 hover:to-green-700 text-white shadow-green-300 hover:scale-105 hover:shadow-xl'
-            }`}
-            whileHover={isLoading ? {} : { y: -2, scale: 1.02 }}
-            whileTap={isLoading ? {} : { scale: 0.98 }}
+          {/* Apple-style Mode Selection Cards */}
+          <motion.div 
+            className="mb-8"
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.6 }}
           >
-            {isLoading ? (
-              <div className="flex items-center justify-center">
+            <div className="grid gap-4 mb-6">
+              {/* 새로 시작하기 - 3D 포켓볼 카드 */}
+              <motion.button
+                type="button"
+                onClick={() => handleModeChange('new')}
+                className={`mode-card ${mode === 'new' ? 'mode-card-active-red' : 'mode-card-inactive'}`}
+                whileHover={{ y: -4, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              >
+                <div className="card-content">
+                  <div className="flex items-center justify-center mb-3">
+                    <motion.div 
+                      className="pokeball-icon-red"
+                      whileHover={{ rotate: 15 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <div className="w-16 h-16 rounded-full relative overflow-hidden shadow-lg">
+                        <div className="absolute inset-0 bg-gradient-to-b from-red-500 to-red-600"></div>
+                        <div className="absolute bottom-0 w-full h-1/2 bg-gradient-to-b from-gray-100 to-white"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-6 h-6 bg-white rounded-full border-4 border-gray-800 shadow-inner"></div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">새로 시작하기</h3>
+                  <p className="text-sm opacity-80">
+                    새로운 트레이너로 모험을 시작하세요!
+                  </p>
+                  <div className="ios-chevron">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <polyline points="9,18 15,12 9,6"></polyline>
+                    </svg>
+                  </div>
+                </div>
+              </motion.button>
+              
+              {/* 이어서 하기 - 3D 마스터볼 카드 */}
+              <motion.button
+                type="button"
+                onClick={() => handleModeChange('existing')}
+                className={`mode-card ${mode === 'existing' ? 'mode-card-active-blue' : 'mode-card-inactive'}`}
+                whileHover={{ y: -4, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              >
+                <div className="card-content">
+                  <div className="flex items-center justify-center mb-3">
+                    <motion.div 
+                      className="pokeball-icon-blue"
+                      whileHover={{ rotate: -15 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <div className="w-16 h-16 rounded-full relative overflow-hidden shadow-lg">
+                        <div className="absolute inset-0 bg-gradient-to-b from-blue-500 to-blue-600"></div>
+                        <div className="absolute bottom-0 w-full h-1/2 bg-gradient-to-b from-gray-100 to-white"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-6 h-6 bg-white rounded-full border-4 border-gray-800 shadow-inner"></div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">이어서 하기</h3>
+                  <p className="text-sm opacity-80">
+                    이전 모험을 계속해서 플레이하세요!
+                  </p>
+                  <div className="ios-chevron">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <polyline points="9,18 15,12 9,6"></polyline>
+                    </svg>
+                  </div>
+                </div>
+              </motion.button>
+            </div>
+          </motion.div>
+
+          {/* Apple-style Input Form */}
+          <AnimatePresence mode="wait">
+            <motion.form 
+              key={mode}
+              onSubmit={handleSubmit}
+              className="space-y-6"
+              initial={{ y: 20, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: -20, opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              {mode === 'new' ? (
                 <motion.div 
-                  className="w-6 h-6 border-4 border-gray-600 border-t-transparent rounded-full mr-3"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                />
-                포켓몬 세계로 이동 중...
-              </div>
-            ) : (
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-2xl">
-                  {mode === 'new' ? '⚡' : '🔓'}
-                </span>
-                <span>
-                  {mode === 'new' ? '모험 시작하기!' : '게임 불러오기'}
-                </span>
-                <span className="text-2xl">
-                  {mode === 'new' ? '🚀' : '📂'}
-                </span>
-              </div>
-            )}
-          </motion.button>
-        </motion.form>
+                  className="input-section"
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.4 }}
+                >
+                  <label className="input-label">
+                    트레이너 닉네임
+                  </label>
+                  <div className="input-container">
+                    <motion.input
+                      type="text"
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      placeholder="예: 지우, 웅이, 이슬이..."
+                      className="apple-input"
+                      maxLength={20}
+                      disabled={isLoading}
+                      whileFocus={{ scale: 1.02 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    />
+                    <div className="input-icon">
+                      ⚡
+                    </div>
+                  </div>
+                  <p className="input-help">
+                    포켓몬 세계에서 사용할 트레이너 이름을 입력해주세요
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  className="input-section"
+                  initial={{ x: 20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.4 }}
+                >
+                  <label className="input-label">
+                    닉네임
+                  </label>
+                  <div className="input-container">
+                    <motion.input
+                      type="text"
+                      value={userId}
+                      onChange={(e) => setUserId(e.target.value)}
+                      placeholder="이전에 사용한 닉네임을 입력하세요"
+                      className="apple-input"
+                      disabled={isLoading}
+                      maxLength={20}
+                      whileFocus={{ scale: 1.02 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    />
+                    <div className="input-icon">
+                      🔍
+                    </div>
+                  </div>
+                  <p className="input-help">
+                    이전에 만든 트레이너 이름을 입력하면 모험을 계속할 수 있어요
+                  </p>
+                </motion.div>
+              )}
 
-        {/* 게임 소개 */}
-        <motion.div 
-          className="mt-8 p-4 bg-blue-50 rounded-lg"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.8, duration: 0.5 }}
-        >
-          <h3 className="font-bold text-blue-700 mb-2">🎯 게임 소개</h3>
-          <div className="text-sm text-blue-600 space-y-1">
-            <p>• 포켓몬과 함께 구구단을 배워요</p>
-            <p>• 문제를 맞추면 포켓몬을 잡을 수 있어요</p>
-            <p>• 지역별로 다른 포켓몬들이 기다려요</p>
-            <p>• 레벨업하고 포켓몬 마스터가 되어보세요!</p>
-          </div>
+              {/* Error Messages with Apple-style Alert */}
+              <AnimatePresence>
+                {(error || formError) && (
+                  <motion.div 
+                    className="error-alert"
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  >
+                    <div className="error-content">
+                      <span className="error-icon">⚠️</span>
+                      <span className="error-text">{error || formError}</span>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Apple-style Action Button */}
+              <motion.button
+                type="submit"
+                disabled={isLoading || (mode === 'new' ? !nickname.trim() : !userId.trim())}
+                className="apple-button"
+                whileHover={isLoading ? {} : { y: -3, scale: 1.01 }}
+                whileTap={isLoading ? {} : { scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <motion.div 
+                      className="pokeball-spinner"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                    />
+                    <span className="ml-3">포켓몬 세계로 이동 중...</span>
+                  </div>
+                ) : (
+                  <div className="button-content">
+                    <span className="text-2xl mr-2">
+                      {mode === 'new' ? '🎆' : '🎮'}
+                    </span>
+                    <span className="font-semibold">
+                      {mode === 'new' ? '모험 시작하기' : '게임 불러오기'}
+                    </span>
+                    <motion.span 
+                      className="text-xl ml-2"
+                      animate={{ x: [0, 4, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      →
+                    </motion.span>
+                  </div>
+                )}
+              </motion.button>
+            </motion.form>
+          </AnimatePresence>
+
+          {/* Game Features Preview */}
+          <motion.div 
+            className="features-grid"
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 1.0, duration: 0.6 }}
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <div className="feature-card">
+                <div className="feature-icon">🎮</div>
+                <p className="feature-text">게임화 학습</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">📈</div>
+                <p className="feature-text">맞춤형 AI</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">🏆</div>
+                <p className="feature-text">리더보드</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">📱</div>
+                <p className="feature-text">모바일 최적화</p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Bottom Info */}
+          <motion.div 
+            className="bottom-info"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2, duration: 0.5 }}
+          >
+            <p>초등학교 2학년 수학 교육용 게임</p>
+          </motion.div>
         </motion.div>
-
-        {/* 개발자 정보 */}
-        <motion.p 
-          className="text-xs text-gray-400 mt-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 0.5 }}
-        >
-          초등학교 2학년 수학 교육용 게임
-        </motion.p>
-      </motion.div>
+      </div>
     </div>
   );
 }
