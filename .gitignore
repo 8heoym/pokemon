@@ -63,3 +63,4 @@ temp/
 
 # Puppeteer browser downloads
 .puppeteer/
+.vercel

@@ -1,5 +1,6 @@
 [build]
 builder = "nixpacks"
+nixpacksConfigPath = "backend"
 
 [deploy]
-startCommand = "cd backend && npm run build && npm start"
+startCommand = "npm start"
