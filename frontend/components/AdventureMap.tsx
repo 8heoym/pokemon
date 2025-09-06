@@ -135,14 +135,14 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
                   <div className="mt-4">
                     <div className="flex justify-between text-sm mb-2">
                       <span>진행도</span>
-                      <span>{region.completedStages}/{region.stages} 스테이지</span>
+                      <span>{region.completedStages}/{region.stages.length} 스테이지</span>
                     </div>
                     <div className="bg-white/20 rounded-full h-2">
                       <motion.div
                         className="bg-white rounded-full h-2"
                         initial={{ width: 0 }}
                         animate={{ 
-                          width: `${(region.completedStages / region.stages) * 100}%` 
+                          width: `${(region.completedStages / region.stages.length) * 100}%` 
                         }}
                         transition={{ duration: 1, delay: regionIndex * 0.1 }}
                       />
@@ -179,8 +179,8 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
 
             {/* PRD [F-1.4] 스테이지 경로 */}
             <div className="stages-path flex-1 max-w-2xl">
-              <div className={`grid gap-3 ${region.stages <= 5 ? 'grid-cols-5' : 
-                             region.stages <= 8 ? 'grid-cols-4' : 'grid-cols-5'}`}>
+              <div className={`grid gap-3 ${region.stages.length <= 5 ? 'grid-cols-5' : 
+                             region.stages.length <= 8 ? 'grid-cols-4' : 'grid-cols-5'}`}>
                 {region.stages.map((stage, stageIndex) => {
                   const visualConfig = STAGE_VISUAL_CONFIG[stage.isCompleted ? 
                     STAGE_STATUS.COMPLETED : 
@@ -206,7 +206,7 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
                       transition={{ delay: regionIndex * 0.1 + stageIndex * 0.05 }}
                     >
                       {/* 스테이지 아이콘 */}
-                      <div className={`text-2xl mb-2 ${visualConfig.pulseColor || ''}`}>
+                      <div className={`text-2xl mb-2 ${stage.isCompleted ? '' : 'animate-pulse'}`}>
                         {visualConfig.icon}
                       </div>
                       

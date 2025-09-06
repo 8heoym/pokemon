@@ -121,7 +121,7 @@ export const ADVENTURE_REGIONS: RegionTheme[] = [
 ];
 
 // PRD [F-1.4] 스테이지 이름 템플릿
-export const STAGE_NAME_TEMPLATES = {
+export const STAGE_NAME_TEMPLATES: Record<number, string[]> = {
   2: [
     "피카츄의 번개 수집",
     "라이츄의 전기 저장",
@@ -215,14 +215,16 @@ export const STAGE_VISUAL_CONFIG = {
     textColor: 'text-gray-500',
     borderColor: 'border-gray-300',
     icon: '🔒',
-    glow: false
+    glow: false,
+    glowColor: ''
   },
   [STAGE_STATUS.AVAILABLE]: {
     bgColor: 'bg-white',
     textColor: 'text-gray-700', 
     borderColor: 'border-blue-300',
     icon: '📚',
-    glow: false
+    glow: false,
+    glowColor: ''
   },
   [STAGE_STATUS.IN_PROGRESS]: {
     bgColor: 'bg-yellow-100',
@@ -230,7 +232,7 @@ export const STAGE_VISUAL_CONFIG = {
     borderColor: 'border-yellow-400',
     icon: '⚡',
     glow: true,
-    pulseColor: 'animate-pulse'
+    glowColor: 'shadow-yellow-200'
   },
   [STAGE_STATUS.COMPLETED]: {
     bgColor: 'bg-green-100',

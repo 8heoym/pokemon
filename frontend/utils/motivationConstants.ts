@@ -189,7 +189,7 @@ export const ACHIEVEMENT_BADGES: Badge[] = [
     name: '포켓몬 컬렉터',
     description: '100마리의 포켓몬을 수집했습니다',
     imageUrl: '/images/badges/collector.png',
-    category: 'collection',
+    category: 'achievement',
     requirements: {
       type: 'collection',
       value: 100,

@@ -346,7 +346,7 @@ export default function GameDashboard({
             </PokemonButton>
             <PokemonButton
               onClick={handleBadgeCaseOpen}
-              variant="secondary"
+              variant="outline"
               size="sm"
               className="flex items-center justify-center space-x-2"
             >

@@ -63,7 +63,7 @@ const BadgeShop: React.FC<BadgeShopProps> = ({ user, isOpen, onClose, onPurchase
       name: '전설의 수집가',
       description: '전설 포켓몬 수집 기념 배지',
       price: 2000,
-      type: 'collection',
+      type: 'cosmetic',
       imageUrl: '/images/items/legendary_collector.png',
       available: user.trainerLevel >= 20,
       purchasedAt: user.purchasedItems?.includes('legendary_collector') ? new Date() : undefined
@@ -253,7 +253,7 @@ const BadgeShop: React.FC<BadgeShopProps> = ({ user, isOpen, onClose, onPurchase
                         ) : !item.available ? (
                           <div>
                             <PokemonButton
-                              variant="secondary"
+                              variant="outline"
                               size="sm"
                               className="w-full"
                               disabled
@@ -271,7 +271,7 @@ const BadgeShop: React.FC<BadgeShopProps> = ({ user, isOpen, onClose, onPurchase
                           </div>
                         ) : (
                           <PokemonButton
-                            variant={canAfford(item.price) ? "primary" : "secondary"}
+                            variant={canAfford(item.price) ? "primary" : "outline"}
                             size="sm"
                             className="w-full"
                             disabled={!canAfford(item.price) || purchasing === item.id}
