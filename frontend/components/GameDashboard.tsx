@@ -218,7 +218,7 @@ export default function GameDashboard({
         {/* 레벨 정보 */}
         <PokemonCard size="sm" className="text-center">
           <h3 className="font-bold text-blue-600 mb-2">🎯 레벨 진행률</h3>
-          <div className="text-2xl font-bold mb-2">Lv.{user.trainerLevel}</div>
+          <div className="text-2xl font-bold mb-2 text-gray-800">Lv.{user.trainerLevel}</div>
           <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
             <div 
               className="bg-gradient-to-r from-blue-400 to-purple-500 h-3 rounded-full transition-all duration-500"
@@ -233,7 +233,7 @@ export default function GameDashboard({
         {/* 포켓몬 수집 현황 */}
         <PokemonCard size="sm" className="text-center">
           <h3 className="font-bold text-green-600 mb-2">📱 포켓몬 도감</h3>
-          <div className="text-2xl font-bold mb-2">
+          <div className="text-2xl font-bold mb-2 text-gray-800">
             {user.caughtPokemon.length}마리
           </div>
           <div className="text-sm text-gray-600">
@@ -252,7 +252,7 @@ export default function GameDashboard({
         {/* 구구단 완성 현황 */}
         <PokemonCard size="sm" className="text-center">
           <h3 className="font-bold text-purple-600 mb-2">🧮 구구단 마스터</h3>
-          <div className="text-2xl font-bold mb-2">
+          <div className="text-2xl font-bold mb-2 text-gray-800">
             {user.completedTables.length}/8
           </div>
           <div className="text-sm text-gray-600">
