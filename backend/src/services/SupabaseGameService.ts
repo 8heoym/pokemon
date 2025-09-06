@@ -21,7 +21,14 @@ export class SupabaseGameService {
         current_region: '관동지방',
         completed_tables: [],
         caught_pokemon: [],
-        total_experience: 0
+        total_experience: 0,
+        // Phase 2: Motivation System defaults (commented until schema update)
+        // current_streak: 0,
+        // longest_streak: 0,
+        // last_active_date: new Date().toISOString(),
+        // star_dust: 100, // Starting bonus
+        // earned_badges: [],
+        // purchased_items: []
       };
 
       const { data, error } = await supabase
@@ -405,7 +412,14 @@ export class SupabaseGameService {
       completedTables: userRow.completed_tables,
       caughtPokemon: userRow.caught_pokemon,
       totalExperience: userRow.total_experience,
-      createdAt: new Date(userRow.created_at)
+      createdAt: new Date(userRow.created_at),
+      // Phase 2: Motivation System (temporary defaults until schema update)
+      currentStreak: (userRow as any).current_streak || 0,
+      longestStreak: (userRow as any).longest_streak || 0,
+      lastActiveDate: (userRow as any).last_active_date ? new Date((userRow as any).last_active_date) : new Date(),
+      starDust: (userRow as any).star_dust || 100,
+      earnedBadges: (userRow as any).earned_badges || [],
+      purchasedItems: (userRow as any).purchased_items || []
     };
   }
 

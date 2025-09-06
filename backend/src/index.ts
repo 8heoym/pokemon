@@ -7,6 +7,8 @@ import { SimpleProblemController } from './controllers/SimpleProblemController';
 import { SimpleGameController } from './controllers/SimpleGameController';
 import { PerformanceController } from './controllers/PerformanceController';
 import { SessionController } from './controllers/SessionController';
+import { MotivationController } from './controllers/MotivationController';
+import { DatabaseSchemaUpdater } from './utils/updateDatabaseSchema';
 import { PokemonImageDownloader } from './utils/imageDownloader';
 import { TemplateSystemInitializer } from './utils/initializeTemplateSystem';
 
@@ -26,6 +28,8 @@ const problemController = new SimpleProblemController();
 const gameController = new SimpleGameController();
 const performanceController = new PerformanceController();
 const sessionController = new SessionController();
+const motivationController = new MotivationController();
+const schemaUpdater = new DatabaseSchemaUpdater();
 const templateInitializer = new TemplateSystemInitializer();
 
 // 기본 라우트
@@ -312,6 +316,47 @@ app.post('/api/session/cleanup', (req, res) => sessionController.cleanupSessions
 app.delete('/api/session/user/:userId', (req, res) => sessionController.clearUserSessions(req, res));
 app.delete('/api/session/all', (req, res) => sessionController.clearAllSessions(req, res));
 app.get('/api/session/test', (req, res) => sessionController.performanceTest(req, res));
+
+// Phase 2: Motivation System API 라우트
+app.post('/api/users/:userId/streak', (req, res) => motivationController.updateStreak(req, res));
+app.post('/api/users/:userId/daily-bonus', (req, res) => motivationController.claimDailyBonus(req, res));
+app.post('/api/users/:userId/stardust', (req, res) => motivationController.awardStarDust(req, res));
+app.get('/api/users/:userId/shop', (req, res) => motivationController.getShopItems(req, res));
+app.post('/api/users/:userId/purchase', (req, res) => motivationController.purchaseItem(req, res));
+app.post('/api/users/:userId/badge', (req, res) => motivationController.awardBadge(req, res));
+app.get('/api/users/:userId/motivation-stats', (req, res) => motivationController.getMotivationStats(req, res));
+
+// Phase 2: Database schema update API
+app.post('/api/database/update-schema', async (req, res) => {
+  try {
+    const result = await schemaUpdater.updateUsersTableForPhase2();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ 
+      success: false, 
+      message: `Schema update failed: ${error.message}` 
+    });
+  }
+});
+
+app.get('/api/database/schema-status', async (req, res) => {
+  try {
+    const status = await schemaUpdater.getMigrationStatus();
+    const validation = await schemaUpdater.validatePhase2Schema();
+    
+    res.json({
+      success: true,
+      migrationStatus: status,
+      validation: validation,
+      ready: validation.valid
+    });
+  } catch (error: any) {
+    res.status(500).json({ 
+      success: false, 
+      message: `Schema status check failed: ${error.message}` 
+    });
+  }
+});
 
 // 에러 핸들링
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

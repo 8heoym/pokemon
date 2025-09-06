@@ -19,6 +19,13 @@ export interface User {
   caughtPokemon: number[];
   totalExperience: number;
   createdAt: Date;
+  // Phase 2: Motivation System
+  currentStreak: number;
+  longestStreak: number;
+  lastActiveDate: Date;
+  starDust: number;
+  earnedBadges: string[];
+  purchasedItems: string[];
 }
 
 export interface MathProblem {
@@ -96,4 +103,43 @@ export interface RegionData {
   backgroundColor: string;
   isUnlocked: boolean;
   completionRate: number;
+}
+
+// Phase 2: Motivation System Types
+export interface StreakData {
+  currentStreak: number;
+  longestStreak: number;
+  lastActiveDate: Date;
+  dailyGoalMet: boolean;
+}
+
+export interface StarDustTransaction {
+  id: string;
+  userId: string;
+  amount: number;
+  type: 'earned' | 'spent';
+  source: 'problem_correct' | 'streak_bonus' | 'daily_bonus' | 'shop_purchase';
+  timestamp: Date;
+  description: string;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  category: 'achievement' | 'progress' | 'special' | 'streak';
+  earnedAt?: Date;
+  progress?: number;
+}
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  type: 'cosmetic' | 'functional' | 'collection';
+  imageUrl: string;
+  available: boolean;
+  purchasedAt?: Date;
 }

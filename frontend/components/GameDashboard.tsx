@@ -6,12 +6,16 @@ import { User, MathProblem, Pokemon } from '@/types';
 import { MULTIPLICATION_ORDER, calculateLevel, getLevelProgress } from '@/utils/gameUtils';
 import { useProblems, useUsers } from '@/hooks/useApiCall';
 import UserProfile from './UserProfile';
-import MultiplicationTableSelector from './MultiplicationTableSelector';
+import AdventureMap from './AdventureMap';
 import ProblemCard from './ProblemCard';
 import PokedexModalInfiniteScroll from './PokedexModalInfiniteScroll';
 import LeaderboardModal from './LeaderboardModal';
 import LoadingScreen from './LoadingScreen';
 import Confetti from 'react-confetti';
+import StreakDisplay from './StreakDisplay';
+import StarDustDisplay from './StarDustDisplay';
+import BadgeShop from './BadgeShop';
+import BadgeCase from './BadgeCase';
 import { PokemonCard, PokemonButton } from './ui';
 
 interface GameDashboardProps {
@@ -25,14 +29,18 @@ export default function GameDashboard({
   onUserUpdate,
   onLogout
 }: GameDashboardProps) {
-  const [selectedTable, setSelectedTable] = useState<number>(2);
+  const [selectedStage, setSelectedStage] = useState<{regionId: number; stageNumber: number} | null>(null);
   const [currentProblem, setCurrentProblem] = useState<MathProblem | null>(null);
   const [currentPokemon, setCurrentPokemon] = useState<Pokemon | null>(null);
   const [isLoadingProblem, setIsLoadingProblem] = useState(false);
   const [showPokedex, setShowPokedex] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [gameMode, setGameMode] = useState<'select' | 'problem'>('select');
+  const [gameMode, setGameMode] = useState<'map' | 'problem'>('map');
+  // Phase 2: Motivation System modals
+  const [showBadgeShop, setShowBadgeShop] = useState(false);
+  const [showBadgeCase, setShowBadgeCase] = useState(false);
+  const [recentStarDust, setRecentStarDust] = useState(0);
   
   // 🚀 메모리 누수 방지: 타이머 참조 저장
   const confettiTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -49,11 +57,12 @@ export default function GameDashboard({
     }
   };
 
-  // 🚀 최적화된 문제 생성
-  const generateNewProblem = async (tableNumber: number, difficulty: 1 | 2 | 3 = 1) => {
+  // 🚀 스테이지 선택 시 문제 생성
+  const handleStageSelect = async (regionId: number, stageNumber: number) => {
+    setSelectedStage({ regionId, stageNumber });
     setIsLoadingProblem(true);
     
-    const result = await generateProblem(user.id, tableNumber, difficulty);
+    const result = await generateProblem(user.id, regionId, 1); // regionId를 구구단 번호로 사용
     
     if (result) {
       const { problem, pokemon } = result;
@@ -67,7 +76,7 @@ export default function GameDashboard({
     setIsLoadingProblem(false);
   };
 
-  // 🚀 최적화된 답안 제출 처리
+  // 🚀 최적화된 답안 제출 처리 + Phase 2 동기부여 시스템
   const handleAnswerSubmit = async (userAnswer: number, timeSpent: number, hintsUsed: number) => {
     if (!currentProblem) return;
 
@@ -80,6 +89,33 @@ export default function GameDashboard({
     );
     
     if (result) {
+      // Phase 2: 정답 시 별의모래 및 스트릭 업데이트
+      if (result.isCorrect) {
+        // 별의모래 획득 (기본 10, 첫 시도 성공 시 15)
+        const starDustEarned = hintsUsed === 0 ? 15 : 10;
+        setRecentStarDust(starDustEarned);
+        
+        // 스트릭 업데이트 API 호출
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/users/${user.id}/streak`, {
+            method: 'POST'
+          });
+          
+          // 별의모래 지급 API 호출
+          await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/users/${user.id}/stardust`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              amount: starDustEarned,
+              source: 'problem_correct',
+              description: `문제 정답 (${hintsUsed === 0 ? '첫 시도 성공' : '정답'})`
+            })
+          });
+        } catch (error) {
+          console.error('Motivation system update failed:', error);
+        }
+      }
+      
       // 사용자 데이터 새로고침
       await refreshUserData();
       
@@ -102,25 +138,26 @@ export default function GameDashboard({
 
   // 다음 문제로 이동
   const handleNextProblem = () => {
-    generateNewProblem(selectedTable);
+    if (selectedStage) {
+      handleStageSelect(selectedStage.regionId, selectedStage.stageNumber);
+    }
   };
 
-  // 구구단 선택 화면으로 돌아가기
-  const handleBackToSelect = () => {
-    setGameMode('select');
+  // 모험 지도로 돌아가기
+  const handleBackToMap = () => {
+    setGameMode('map');
     setCurrentProblem(null);
     setCurrentPokemon(null);
+    setSelectedStage(null);
   };
 
-  // 컴포넌트 마운트 시 사용자 추천 구구단 설정
+  // 컴포넌트 마운트 시 초기화
   useEffect(() => {
-    // 완료하지 않은 구구단 중 가장 쉬운 것 선택
-    const incompleteTables = MULTIPLICATION_ORDER.filter(
-      table => !user.completedTables.includes(table)
-    );
-    if (incompleteTables.length > 0) {
-      setSelectedTable(incompleteTables[0]);
-    }
+    // 모험 지도 모드로 시작
+    setGameMode('map');
+    setSelectedStage(null);
+    // 별의모래 애니메이션 초기화
+    setRecentStarDust(0);
   }, [user]);
 
   // 🚀 메모리 누수 방지: 컴포넌트 언마운트 시 타이머 정리
@@ -131,6 +168,62 @@ export default function GameDashboard({
       }
     };
   }, []);
+
+  // Phase 2: Motivation System handlers
+  const handleClaimDailyBonus = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/users/${user.id}/daily-bonus`, {
+        method: 'POST'
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        setRecentStarDust(result.data.starDust);
+        await refreshUserData();
+        alert(`일일 보너스 획득! 별의모래 ${result.data.starDust}, 경험치 ${result.data.experience}`);
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('Daily bonus claim failed:', error);
+    }
+  };
+  
+  const handleShopPurchase = async (itemId: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/users/${user.id}/purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId })
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        await refreshUserData();
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Shop purchase failed:', error);
+      return { success: false, message: '구매 처리 중 오류가 발생했습니다.' };
+    }
+  };
+  
+  const handleBadgeShopOpen = () => {
+    setShowBadgeShop(true);
+  };
+  
+  const handleBadgeCaseOpen = () => {
+    setShowBadgeCase(true);
+  };
+  
+  // 별의모래 애니메이션 타이머 정리
+  useEffect(() => {
+    if (recentStarDust > 0) {
+      const timer = setTimeout(() => setRecentStarDust(0), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [recentStarDust]);
 
   if (isLoadingProblem) {
     return <LoadingScreen message="새로운 포켓몬 문제를 준비하는 중..." />;
@@ -156,19 +249,18 @@ export default function GameDashboard({
 
       {/* 메인 게임 영역 */}
       <AnimatePresence mode="wait">
-        {gameMode === 'select' ? (
+        {gameMode === 'map' ? (
           <motion.div
-            key="selector"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ duration: 0.3 }}
+            key="adventure-map"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
           >
-            <MultiplicationTableSelector
+            <AdventureMap
               user={user}
-              selectedTable={selectedTable}
-              onTableSelect={setSelectedTable}
-              onStartProblem={(table) => generateNewProblem(table)}
+              onStageSelect={handleStageSelect}
+              selectedStage={selectedStage}
             />
           </motion.div>
         ) : (
@@ -179,14 +271,15 @@ export default function GameDashboard({
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
           >
-            {currentProblem && currentPokemon && (
+            {currentProblem && currentPokemon && selectedStage && (
               <ProblemCard
                 problem={currentProblem}
                 pokemon={currentPokemon}
                 user={user}
                 onAnswerSubmit={handleAnswerSubmit}
                 onNextProblem={handleNextProblem}
-                onBackToSelect={handleBackToSelect}
+                onBackToSelect={handleBackToMap}
+                stageInfo={selectedStage}
               />
             )}
           </motion.div>
@@ -208,27 +301,69 @@ export default function GameDashboard({
         loading={false}
       />
 
+      {/* Phase 2: 동기부여 시스템 모달들 */}
+      <BadgeShop
+        user={user}
+        isOpen={showBadgeShop}
+        onClose={() => setShowBadgeShop(false)}
+        onPurchase={handleShopPurchase}
+      />
+
+      <BadgeCase
+        user={user}
+        isOpen={showBadgeCase}
+        onClose={() => setShowBadgeCase(false)}
+      />
+
+      {/* Phase 2: 동기부여 시스템 영역 */}
+      <motion.div 
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+      >
+        {/* 스트릭 디스플레이 */}
+        <StreakDisplay 
+          user={user} 
+          onClaimDailyBonus={handleClaimDailyBonus}
+        />
+        
+        {/* 별의모래 & 상점 */}
+        <div className="space-y-4">
+          <StarDustDisplay 
+            user={user} 
+            recentEarned={recentStarDust}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <PokemonButton
+              onClick={handleBadgeShopOpen}
+              variant="primary"
+              size="sm"
+              className="flex items-center justify-center space-x-2"
+            >
+              <span>🏪</span>
+              <span>상점</span>
+            </PokemonButton>
+            <PokemonButton
+              onClick={handleBadgeCaseOpen}
+              variant="secondary"
+              size="sm"
+              className="flex items-center justify-center space-x-2"
+            >
+              <span>🏆</span>
+              <span>배지</span>
+            </PokemonButton>
+          </div>
+        </div>
+      </motion.div>
+
       {/* 하단 통계 정보 */}
       <motion.div 
-        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.5 }}
       >
-        {/* 레벨 정보 */}
-        <PokemonCard size="sm" className="text-center">
-          <h3 className="font-bold text-blue-600 mb-2">🎯 레벨 진행률</h3>
-          <div className="text-2xl font-bold mb-2 text-gray-800">Lv.{user.trainerLevel}</div>
-          <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
-            <div 
-              className="bg-gradient-to-r from-blue-400 to-purple-500 h-3 rounded-full transition-all duration-500"
-              style={{ width: `${getLevelProgress(user.totalExperience)}%` }}
-            ></div>
-          </div>
-          <p className="text-sm text-gray-600">
-            {user.totalExperience} EXP
-          </p>
-        </PokemonCard>
 
         {/* 포켓몬 수집 현황 */}
         <PokemonCard size="sm" className="text-center">
@@ -264,34 +399,6 @@ export default function GameDashboard({
         </PokemonCard>
       </motion.div>
 
-      {/* 게임 팁 */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7, duration: 0.5 }}
-      >
-        <PokemonCard>
-          <h3 className="font-bold text-blue-600 mb-3 text-center">💡 게임 팁</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <span className="font-bold text-blue-600">🎯 정확도</span>
-              <p className="text-gray-600">천천히 생각해서 정확하게 답하세요!</p>
-            </div>
-            <div className="bg-green-50 p-3 rounded-lg">
-              <span className="font-bold text-green-600">⚡ 속도</span>
-              <p className="text-gray-600">빨리 답할수록 더 많은 경험치를 얻어요!</p>
-            </div>
-            <div className="bg-yellow-50 p-3 rounded-lg">
-              <span className="font-bold text-yellow-600">💡 힌트</span>
-              <p className="text-gray-600">어려우면 힌트를 활용해보세요!</p>
-            </div>
-            <div className="bg-purple-50 p-3 rounded-lg">
-              <span className="font-bold text-purple-600">🔄 연습</span>
-              <p className="text-gray-600">같은 구구단을 반복하면 마스터해요!</p>
-            </div>
-          </div>
-        </PokemonCard>
-      </motion.div>
     </div>
   );
 }

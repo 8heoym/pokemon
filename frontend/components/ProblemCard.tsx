@@ -25,6 +25,7 @@ interface ProblemCardProps {
   onAnswerSubmit: (userAnswer: number, timeSpent: number, hintsUsed: number) => Promise<any>;
   onNextProblem: () => void;
   onBackToSelect: () => void;
+  stageInfo?: {regionId: number; stageNumber: number};
 }
 
 const ProblemCard: React.FC<ProblemCardProps> = ({
@@ -33,7 +34,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   user,
   onAnswerSubmit,
   onNextProblem,
-  onBackToSelect
+  onBackToSelect,
+  stageInfo
 }) => {
   const [userAnswer, setUserAnswer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
