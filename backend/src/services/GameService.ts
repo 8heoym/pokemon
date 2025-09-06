@@ -3,21 +3,45 @@ import { PokemonService } from './PokemonService';
 import { LearningAnalysisService } from './LearningAnalysisService';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../types';
+import { GameCalculations } from '../utils/GameCalculations';
+import { BaseGameServiceWithUser } from './BaseGameService';
 
-export class GameService {
+export class GameService extends BaseGameServiceWithUser {
   private pokemonService: PokemonService;
   private learningService: LearningAnalysisService;
 
   constructor() {
+    super('GameService');
     this.pokemonService = new PokemonService();
     this.learningService = new LearningAnalysisService();
   }
 
-  async createUser(nickname: string): Promise<User> {
+  async initialize(): Promise<void> {
+    this.log('info', 'GameService 초기화 시작');
+    // 초기화 로직이 필요한 경우 여기에 구현
+  }
+
+  async healthCheck(): Promise<boolean> {
     try {
+      // MongoDB 연결 확인 등
+      return true;
+    } catch (error) {
+      this.log('error', '헬스체크 실패', error);
+      return false;
+    }
+  }
+
+  async createUser(nickname: string): Promise<User> {
+    return this.measurePerformance('createUser', async () => {
+      const sanitizedNickname = this.sanitizeString(nickname, 50);
+      
+      if (!sanitizedNickname) {
+        throw new Error('유효한 닉네임이 필요합니다.');
+      }
+
       const newUser = new UserModel({
         id: uuidv4(),
-        nickname: nickname.trim(),
+        nickname: sanitizedNickname,
         trainerLevel: 1,
         currentRegion: '관동지방',
         completedTables: [],
@@ -27,22 +51,27 @@ export class GameService {
       });
 
       const savedUser = await newUser.save();
+      
+      this.recordMetric('users_created_total', 1);
       return savedUser.toObject();
-
-    } catch (error) {
-      console.error('사용자 생성 실패:', error);
-      throw error;
-    }
+    }).then(result => {
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      return result.data!;
+    });
   }
 
   async getUser(userId: string): Promise<User | null> {
-    try {
-      const user = await UserModel.findOne({ id: userId }).lean();
-      return user;
-    } catch (error) {
-      console.error('사용자 조회 실패:', error);
-      throw error;
+    if (!await this.validateUser(userId)) {
+      return null;
     }
+
+    return this.safeExecute(async () => {
+      const user = await UserModel.findOne({ id: userId }).lean();
+      this.recordMetric('users_retrieved_total', 1);
+      return user;
+    });
   }
 
   async catchPokemon(userId: string, pokemonId: number): Promise<{ success: boolean; message: string; levelUp?: boolean }> {
@@ -63,11 +92,11 @@ export class GameService {
         return { success: false, message: '포켓몬 정보를 찾을 수 없습니다.' };
       }
 
-      // 경험치 및 레벨 계산
-      const experienceGained = this.calculateExperienceGain(pokemon.rarity);
+      // 🚀 리팩토링: GameCalculations 클래스 사용
+      const experienceGained = GameCalculations.calculateExperienceGain(pokemon.rarity);
       const oldLevel = user.trainerLevel;
       const newExperience = user.totalExperience + experienceGained;
-      const newLevel = this.calculateLevel(newExperience);
+      const newLevel = GameCalculations.calculateLevel(newExperience);
 
       // 사용자 정보 업데이트
       user.caughtPokemon.push(pokemonId);
@@ -194,20 +223,8 @@ export class GameService {
     }
   }
 
-  private calculateExperienceGain(rarity: string): number {
-    const experienceMap: { [key: string]: number } = {
-      common: 10,
-      uncommon: 20,
-      rare: 50,
-      legendary: 100
-    };
-    return experienceMap[rarity] || 10;
-  }
-
-  private calculateLevel(totalExperience: number): number {
-    // 레벨 = √(총 경험치 / 100) + 1
-    return Math.floor(Math.sqrt(totalExperience / 100)) + 1;
-  }
+  // 🚀 리팩토링: 중복된 계산 메서드 제거 - GameCalculations 클래스 사용
+  // calculateExperienceGain과 calculateLevel 메서드는 GameCalculations로 이동됨
 
   private getRegionTables(region: string): number[] {
     const regionTableMap: { [key: string]: number[] } = {

@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase';
 import { Pokemon } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { sessionCacheService } from './SessionCacheService';
 
 export interface ProblemTemplate {
   id: string;
@@ -225,17 +226,31 @@ export class ProblemTemplateService {
 
   async saveToSession(userId: string, problem: RenderedProblem): Promise<void> {
     try {
-      // 기존 세션 삭제 (사용자당 하나만)
-      await supabase
-        .from('problem_instances')
-        .delete()
-        .eq('user_id', userId)
-        .eq('is_answered', false);
+      // 🚀 성능 최적화: 메모리 캐시 우선 저장 (초고속)
+      await sessionCacheService.saveSession(userId, problem);
 
-      // 새 세션 저장
+      // 백그라운드에서 DB 저장 (장애 복구용)
+      this.saveToSessionDB(userId, problem).catch(error => 
+        console.warn('백그라운드 DB 세션 저장 실패 (캐시는 정상):', error)
+      );
+
+      console.log(`💾 세션 저장 완료 (하이브리드): ${userId} → ${problem.id}`);
+    } catch (error) {
+      console.error('❌ 하이브리드 세션 저장 실패:', error);
+      
+      // 폴백: 기존 DB 저장 방식
+      console.log('🔄 폴백: 기존 DB 세션 저장 시도');
+      await this.saveToSessionDB(userId, problem);
+    }
+  }
+
+  // DB 세션 저장 (백그라운드용)
+  private async saveToSessionDB(userId: string, problem: RenderedProblem): Promise<void> {
+    try {
+      // 🚀 성능 최적화: 삭제 없이 upsert 방식으로 변경
       const { error } = await supabase
         .from('problem_instances')
-        .insert({
+        .upsert({
           id: problem.id,
           user_id: userId,
           template_id: problem.templateId,
@@ -247,18 +262,32 @@ export class ProblemTemplateService {
           variables_used: problem.variablesUsed,
           multiplication_table: problem.multiplicationTable,
           difficulty: problem.difficulty,
-          expires_at: new Date(Date.now() + 30 * 60 * 1000) // 30분 후
+          is_answered: false,
+          expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000) // 2시간 (더 긴 TTL)
+        }, {
+          onConflict: 'id'
         });
 
       if (error) throw error;
     } catch (error) {
-      console.error('세션 저장 실패:', error);
+      console.error('❌ DB 세션 저장 실패:', error);
       throw error;
     }
   }
 
   async getProblemFromSession(userId: string, problemId: string): Promise<RenderedProblem | null> {
     try {
+      // 🚀 성능 최적화: 메모리 캐시 우선 조회 (초고속)
+      const cachedProblem = await sessionCacheService.getSession(userId, problemId);
+      
+      if (cachedProblem) {
+        console.log(`⚡ 세션 캐시 히트: ${userId} → ${problemId}`);
+        return cachedProblem;
+      }
+
+      // 캐시 미스: DB에서 조회 및 캐시 복원
+      console.log(`🔄 세션 캐시 미스, DB 조회: ${userId} → ${problemId}`);
+      
       const { data, error } = await supabase
         .from('problem_instances')
         .select('*')
@@ -273,14 +302,41 @@ export class ProblemTemplateService {
         throw error;
       }
 
-      return this.convertToRenderedProblem(data);
+      const problem = this.convertToRenderedProblem(data);
+      
+      // DB에서 찾은 세션을 캐시에 복원
+      if (problem) {
+        sessionCacheService.saveSession(userId, problem).catch(err => 
+          console.warn('세션 캐시 복원 실패:', err)
+        );
+      }
+
+      return problem;
     } catch (error) {
-      console.error('세션 문제 조회 실패:', error);
+      console.error('❌ 세션 문제 조회 실패:', error);
       return null;
     }
   }
 
   async markProblemAnswered(problemId: string, userId: string): Promise<void> {
+    try {
+      // 🚀 성능 최적화: 캐시에서 즉시 삭제 (초고속)
+      const cacheDeleted = await sessionCacheService.markSessionCompleted(userId, problemId);
+
+      // 백그라운드에서 DB 업데이트
+      this.markProblemAnsweredDB(problemId, userId).catch(error => 
+        console.warn('백그라운드 DB 세션 완료 처리 실패:', error)
+      );
+
+      console.log(`✅ 세션 완료 처리 (하이브리드): ${userId} → ${problemId} (캐시: ${cacheDeleted ? '삭제됨' : '없음'})`);
+    } catch (error) {
+      console.error('❌ 세션 완료 처리 실패:', error);
+      throw error;
+    }
+  }
+
+  // DB 세션 완료 처리 (백그라운드용)
+  private async markProblemAnsweredDB(problemId: string, userId: string): Promise<void> {
     try {
       const { error } = await supabase
         .from('problem_instances')
@@ -290,7 +346,7 @@ export class ProblemTemplateService {
 
       if (error) throw error;
     } catch (error) {
-      console.error('문제 답변 완료 표시 실패:', error);
+      console.error('❌ DB 세션 완료 처리 실패:', error);
       throw error;
     }
   }

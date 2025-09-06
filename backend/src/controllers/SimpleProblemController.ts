@@ -66,13 +66,18 @@ export class SimpleProblemController {
         hintsUsed
       );
 
-      // 정답일 경우 포켓몬 잡기 시도 (기존 로직 유지)
+      // 🚀 성능 최적화: 정답일 경우 포켓몬 잡기 시도 (기존 로직 유지)
       if (result.isCorrect) {
-        const randomPokemonId = Math.floor(Math.random() * 842) + 1;
-        const catchResult = await this.gameService.catchPokemon(userId, randomPokemonId);
-        if (catchResult.success) {
-          result.pokemonCaught = catchResult.pokemon;
-          result.experienceGained = catchResult.experienceGained;
+        try {
+          const randomPokemonId = Math.floor(Math.random() * 842) + 1;
+          const catchResult = await this.gameService.catchPokemon(userId, randomPokemonId);
+          if (catchResult.success) {
+            result.pokemonCaught = catchResult.pokemon;
+            result.experienceGained = catchResult.experienceGained;
+          }
+        } catch (catchError) {
+          // 포켓몬 잡기 실패는 치명적이지 않으므로 로그만 남기고 계속 진행
+          console.warn('포켓몬 잡기 실패 (답변 처리는 계속):', catchError);
         }
       }
 

@@ -1,17 +1,9 @@
 import { Pokemon, RegionData } from '@/types';
+import { GameCalculations } from './GameCalculations';
+import { GAME_CONFIG, REGION_CONFIG, UI_CONFIG } from './gameConstants';
 
-// 구구단별 지역 매핑
-export const REGION_TABLE_MAP: { [key: string]: number[] } = {
-  '관동지방': [2, 5],
-  '성도지방': [3, 6],
-  '호연지방': [4, 8],
-  '신오지방': [7, 9],
-  '하나지방': [1, 0],
-  '칼로스지방': [2, 3],
-  '알로라지방': [4, 5],
-  '가라르지방': [6, 7],
-  '팔데아지방': [8, 9]
-};
+// 구구단별 지역 매핑 (gameConstants.ts에서 중앙 관리)
+export const REGION_TABLE_MAP = REGION_CONFIG.UNLOCK_REQUIREMENTS;
 
 // 지역 배경색 매핑
 export const REGION_COLORS: { [key: string]: string } = {
@@ -26,8 +18,8 @@ export const REGION_COLORS: { [key: string]: string } = {
   '팔데아지방': 'from-red-400 to-orange-500'
 };
 
-// 구구단 학습 순서 (한국 교육과정 기준)
-export const MULTIPLICATION_ORDER = [2, 5, 3, 6, 4, 8, 7, 9, 1, 0];
+// 구구단 학습 순서 (gameConstants.ts에서 중앙 관리)
+export const MULTIPLICATION_ORDER = GAME_CONFIG.MULTIPLICATION_ORDER;
 
 // 희귀도별 색상
 export const RARITY_COLORS = {
@@ -45,25 +37,20 @@ export const RARITY_BG_COLORS = {
   legendary: 'from-yellow-100 to-yellow-200'
 };
 
-// 레벨 계산 함수
+
+// 레벨 계산 함수 (GameCalculations 위임)
 export const calculateLevel = (experience: number): number => {
-  return Math.floor(Math.sqrt(experience / 100)) + 1;
+  return GameCalculations.calculateLevel(experience);
 };
 
-// 다음 레벨까지 필요한 경험치 계산
+// 다음 레벨까지 필요한 경험치 계산 (GameCalculations 위임)
 export const getExpToNextLevel = (currentExp: number): number => {
-  const currentLevel = calculateLevel(currentExp);
-  const nextLevelExp = Math.pow(currentLevel, 2) * 100;
-  return nextLevelExp - currentExp;
+  return GameCalculations.getExpToNextLevel(currentExp);
 };
 
-// 레벨 진행률 계산 (0-100%)
+// 레벨 진행률 계산 (GameCalculations 위임)
 export const getLevelProgress = (currentExp: number): number => {
-  const currentLevel = calculateLevel(currentExp);
-  const currentLevelExp = Math.pow(currentLevel - 1, 2) * 100;
-  const nextLevelExp = Math.pow(currentLevel, 2) * 100;
-  const progress = ((currentExp - currentLevelExp) / (nextLevelExp - currentLevelExp)) * 100;
-  return Math.min(100, Math.max(0, progress));
+  return GameCalculations.getLevelProgress(currentExp);
 };
 
 // 포켓몬 포획 확률 계산
@@ -106,7 +93,7 @@ export const createRegionData = (
   completedTables: number[],
   currentRegion: string
 ): RegionData => {
-  const regionTables = REGION_TABLE_MAP[regionName] || [];
+  const regionTables = [...(REGION_TABLE_MAP[regionName as keyof typeof REGION_TABLE_MAP] || [])];
   const completedInRegion = regionTables.filter(table => completedTables.includes(table));
   const completionRate = regionTables.length > 0 ? 
     (completedInRegion.length / regionTables.length) * 100 : 0;

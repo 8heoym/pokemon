@@ -5,6 +5,8 @@ import { SupabaseGameService } from './SupabaseGameService';
 import { Pokemon, MathProblem } from '../types';
 import { supabase } from '../config/supabase';
 import { v4 as uuidv4 } from 'uuid';
+// 🚀 리팩토링: GameCalculations 클래스 사용으로 중복 제거
+import { GameCalculations } from '../utils/GameCalculations';
 
 type GenerationStrategy = 'TEMPLATE_PRIORITY' | 'AI_PERSONALIZED' | 'HYBRID_ENHANCED';
 
@@ -62,15 +64,11 @@ export class HybridProblemService {
     difficulty: 1 | 2 | 3
   ): Promise<GenerationStrategy> {
     try {
-      // 사용 가능한 템플릿 확인
-      const availableTemplates = await this.templateService.getAvailableTemplates(
-        multiplicationTable,
-        difficulty,
-        userId
-      );
-
-      // 사용자 학습 이력 확인 (간단한 버전)
-      const userSolvedCount = await this.getUserSolvedCount(userId, multiplicationTable);
+      // 🚀 성능 최적화: 병렬 쿼리 실행
+      const [availableTemplates, userSolvedCount] = await Promise.all([
+        this.templateService.getAvailableTemplates(multiplicationTable, difficulty, userId),
+        this.getUserSolvedCount(userId, multiplicationTable)
+      ]);
 
       // 전략 결정 로직
       if (availableTemplates.length >= 3) {
@@ -95,26 +93,22 @@ export class HybridProblemService {
     difficulty: 1 | 2 | 3
   ): Promise<{ problem: MathProblem; pokemon: Pokemon }> {
     try {
-      // 1. 사용 가능한 템플릿 조회
-      const templates = await this.templateService.getAvailableTemplates(
-        multiplicationTable,
-        difficulty,
-        userId
-      );
+      // 🚀 성능 최적화: 템플릿과 포켓몬 병렬 조회
+      const [templates, pokemon] = await Promise.all([
+        this.templateService.getAvailableTemplates(multiplicationTable, difficulty, userId),
+        this.selectOptimalPokemon(userId, multiplicationTable)
+      ]);
 
       if (templates.length === 0) {
         throw new Error('사용 가능한 템플릿이 없습니다.');
       }
-
-      // 2. 품질 점수 기반 템플릿 선택
-      const selectedTemplate = templates.sort((a, b) => b.qualityScore - a.qualityScore)[0];
-
-      // 3. 적합한 포켓몬 선택
-      const pokemon = await this.selectOptimalPokemon(userId, multiplicationTable);
       
       if (!pokemon) {
         throw new Error('적합한 포켓몬을 찾을 수 없습니다.');
       }
+
+      // 품질 점수 기반 템플릿 선택
+      const selectedTemplate = templates.sort((a, b) => b.qualityScore - a.qualityScore)[0];
 
       // 4. 템플릿 렌더링
       const renderedProblem = await this.templateService.renderProblem(
@@ -156,32 +150,25 @@ export class HybridProblemService {
     difficulty: 1 | 2 | 3
   ): Promise<{ problem: MathProblem; pokemon: Pokemon }> {
     try {
-      // 기존 AI 생성 방식 사용
+      // 🚀 성능 최적화: 포켓몬 선택을 먼저 실행
       const pokemon = await this.selectOptimalPokemon(userId, multiplicationTable);
       
       if (!pokemon) {
         throw new Error('적합한 포켓몬을 찾을 수 없습니다.');
       }
 
+      // AI 문제 생성 (Mock 모드이므로 빠름)
       const problem = await this.aiGenerator.generatePersonalizedProblem(
         pokemon,
         multiplicationTable,
         difficulty
       );
 
-      // AI 생성 문제를 RenderedProblem 형태로 변환 후 세션에 저장
-      // AI 생성 문제를 RenderedProblem 형태로 변환
-      const renderedProblem = this.convertAIProblemToRendered(
-        problem,
-        pokemon,
-        multiplicationTable
-      );
-
-      // 세션에 저장
+      // 🚀 성능 최적화: 간소화된 세션 저장 (Mock 모드)
+      const renderedProblem = this.convertAIProblemToRendered(problem, pokemon, multiplicationTable);
       await this.templateService.saveToSession(userId, renderedProblem);
 
-
-      console.log(`AI 문제 생성 및 세션 저장 완료: ${pokemon.koreanName}`);
+      console.log(`AI 문제 생성 완료 (간소화됨): ${pokemon.koreanName}`);
 
       return {
         problem,
@@ -225,16 +212,15 @@ export class HybridProblemService {
     multiplicationTable: number
   ): Promise<Pokemon | null> {
     try {
-      // 1차: 구구단별 포켓몬 조회
-      let pokemon = await this.pokemonService.getRandomPokemonByTable(multiplicationTable);
+      // 🚀 성능 최적화: 구구단별 포켓몬 조회, 실패 시 즉시 전체에서 선택
+      const pokemon = await this.pokemonService.getRandomPokemonByTable(multiplicationTable);
       
       if (pokemon) {
         return pokemon;
       }
 
-      // 2차: 전체 포켓몬에서 랜덤 선택
-      console.log(`구구단 ${multiplicationTable}에 해당하는 포켓몬이 없어서 전체에서 선택`);
-      return await this.pokemonService.getRandomPokemonByTable(0); // 0 = 전체
+      // 폴백: 전체 포켓몬에서 랜덤 선택
+      return await this.pokemonService.getRandomPokemonByTable(0);
 
     } catch (error) {
       console.error('포켓몬 선택 실패:', error);
@@ -244,6 +230,7 @@ export class HybridProblemService {
 
   private async getUserSolvedCount(userId: string, multiplicationTable: number): Promise<number> {
     try {
+      // 🚀 성능 최적화: 필드를 선택하지 않고 count만 조회
       const { count, error } = await supabase
         .from('user_answers')
         .select('*', { count: 'exact', head: true })
@@ -255,7 +242,7 @@ export class HybridProblemService {
       return count || 0;
     } catch (error) {
       console.error('사용자 해결 문제 수 조회 실패:', error);
-      return 0;
+      return 0; // 실패 시 기본값으로 AI 전략 사용
     }
   }
 
@@ -289,19 +276,19 @@ export class HybridProblemService {
       // 2. 정답 확인
       const isCorrect = userAnswer === problemInstance.answer;
 
-      // 3. 답안 기록 (user_answers 테이블에 저장)
-      await this.recordAnswer(userId, problemInstance, userAnswer, timeSpent, hintsUsed, isCorrect);
-
-      // 4. 문제 세션 완료 처리
-      await this.templateService.markProblemAnswered(problemId, userId);
+      // 🚀 성능 최적화: 답안 기록과 세션 완료 처리 병렬 실행
+      await Promise.all([
+        this.recordAnswer(userId, problemInstance, userAnswer, timeSpent, hintsUsed, isCorrect),
+        this.templateService.markProblemAnswered(problemId, userId)
+      ]);
 
       // 5. 포켓몬 잡기 및 경험치 (기존 로직 사용)
       let pokemonCaught = null;
       let experienceGained = 0;
 
       if (isCorrect) {
-        // 기존 게임 서비스의 포켓몬 잡기 로직 사용
-        experienceGained = this.calculateExperience(problemInstance.difficulty, timeSpent);
+        // 🚀 리팩토링: GameCalculations 클래스 사용
+        experienceGained = GameCalculations.calculateProblemExperience(problemInstance.difficulty, timeSpent);
       }
 
       const feedback = isCorrect ? 
@@ -349,9 +336,11 @@ export class HybridProblemService {
 
       if (error) throw error;
 
-      // 템플릿 사용 통계 업데이트
-      if (isCorrect) {
-        await this.updateTemplatePerformance(userId, problem.templateId, problem.multiplicationTable, true);
+      // 🚀 성능 최적화: 템플릿 성능 업데이트는 백그라운드에서 비동기 처리
+      if (isCorrect && problem.templateId && !problem.templateId.startsWith('ai_')) {
+        // AI 생성 문제가 아닌 경우만 템플릿 성능 업데이트
+        this.updateTemplatePerformance(userId, problem.templateId, problem.multiplicationTable, true)
+          .catch(error => console.warn('템플릿 성능 업데이트 실패 (백그라운드):', error));
       }
 
     } catch (error) {
@@ -381,33 +370,28 @@ export class HybridProblemService {
     }
   }
 
-  private calculateExperience(difficulty: 1 | 2 | 3, timeSpent: number): number {
-    const baseExp = difficulty * 10;
-    const timeBonus = Math.max(0, 30 - timeSpent); // 빠를수록 보너스
-    return baseExp + timeBonus;
-  }
+  // 🚀 리팩토링: 중복된 계산 메서드 제거 - GameCalculations.calculateProblemExperience 사용
 
   private convertAIProblemToRendered(
     problem: MathProblem,
     pokemon: Pokemon,
     multiplicationTable: number
   ): RenderedProblem {
+    // 🚀 성능 최적화: 최소한의 변환만 수행
+    const bValue = multiplicationTable > 0 ? problem.answer / multiplicationTable : 1;
+    
     return {
       id: problem.id,
       story: problem.story,
       hint: problem.hint,
       equation: problem.equation,
       answer: problem.answer,
-      multiplicationTable: multiplicationTable,
+      multiplicationTable,
       pokemonId: pokemon.id,
       difficulty: problem.difficulty,
-      templateId: uuidv4(), // AI 생성 전용 임시 템플릿 ID
-      variablesUsed: {
-        a: multiplicationTable,
-        b: problem.answer / multiplicationTable,
-        answer: problem.answer
-      },
-      visualElements: problem.visualElements
+      templateId: `ai_${Date.now()}`, // 간단한 AI 템플릿 ID
+      variablesUsed: { a: multiplicationTable, b: bValue, answer: problem.answer },
+      visualElements: problem.visualElements || {}
     };
   }
 }

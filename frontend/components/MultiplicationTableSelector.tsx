@@ -1,4 +1,6 @@
 import React from 'react';
+import { PokemonCard } from './ui/PokemonCard';
+import { PokemonButton } from './ui/PokemonButton';
 
 interface User {
   id: string;
@@ -26,16 +28,6 @@ const MultiplicationTableSelector: React.FC<MultiplicationTableSelectorProps> = 
   const completedTables = user.completedTables;
   const tables = [2, 3, 4, 5, 6, 7, 8, 9];
 
-  const getTableColor = (table: number) => {
-    if (selectedTable === table) {
-      return 'bg-blue-500 text-white border-blue-600';
-    }
-    if (completedTables && completedTables.includes(table)) {
-      return 'bg-green-100 text-green-800 border-green-300';
-    }
-    return 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200';
-  };
-
   const getTableStatus = (table: number) => {
     if (completedTables && completedTables.includes(table)) {
       return '✅';
@@ -47,33 +39,33 @@ const MultiplicationTableSelector: React.FC<MultiplicationTableSelectorProps> = 
   };
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-lg">
+    <PokemonCard>
       <h3 className="text-xl font-bold text-gray-800 mb-4">구구단 선택</h3>
       <div className="grid grid-cols-4 gap-3">
         {tables.map((table) => (
-          <button
+          <PokemonButton
             key={table}
             onClick={() => onTableSelect(table)}
-            className={`
-              p-4 rounded-lg border-2 transition-all duration-200 transform
-              hover:scale-105 active:scale-95 font-bold text-center
-              ${getTableColor(table)}
-            `}
+            variant={selectedTable === table ? 'primary' : 
+                    (completedTables && completedTables.includes(table) ? 'success' : 'outline')}
+            size="md"
+            className="h-20 flex-col"
           >
             <div className="text-2xl mb-1">{getTableStatus(table)}</div>
             <div>{table}단</div>
-          </button>
+          </PokemonButton>
         ))}
       </div>
       
       {selectedTable && onStartProblem && (
         <div className="mt-4 text-center">
-          <button
+          <PokemonButton
             onClick={() => onStartProblem(selectedTable)}
-            className="bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+            variant="success"
+            size="lg"
           >
             🚀 {selectedTable}단 문제 풀기 시작!
-          </button>
+          </PokemonButton>
         </div>
       )}
       
@@ -91,7 +83,7 @@ const MultiplicationTableSelector: React.FC<MultiplicationTableSelectorProps> = 
           </div>
         </div>
       </div>
-    </div>
+    </PokemonCard>
   );
 };
 

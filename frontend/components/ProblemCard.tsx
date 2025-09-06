@@ -59,13 +59,15 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               ? `정답입니다! ${result.pokemonCaught.pokemon.koreanName}을(를) 잡았어요! 🎉`
               : '정답입니다! 🎉'
           });
+          // 정답인 경우에만 답변 초기화
+          setUserAnswer('');
         } else {
           setFeedback({
             type: 'incorrect',
             message: '틀렸어요. 다시 생각해보세요!'
           });
+          // 틀린 경우에는 답변을 초기화하지 않고 보존
         }
-        setUserAnswer('');
       } catch (error) {
         console.error('Submit error:', error);
         setFeedback({
@@ -123,40 +125,58 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         )}
       </div>
 
-      {/* 답변 입력 */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            답을 입력하세요:
-          </label>
-          <input
-            type="number"
-            value={userAnswer}
-            onChange={(e) => setUserAnswer(e.target.value)}
-            className="input-pokemon"
-            placeholder="답을 입력하세요"
-            min="0"
-            required
-          />
-        </div>
+      {/* 답변 입력 - 정답 후 비활성화 */}
+      {!feedback.type && (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              답을 입력하세요:
+            </label>
+            <input
+              type="number"
+              value={userAnswer}
+              onChange={(e) => setUserAnswer(e.target.value)}
+              className="input-pokemon"
+              placeholder="답을 입력하세요"
+              min="0"
+              required
+              disabled={isSubmitting}
+            />
+          </div>
 
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={!userAnswer.trim() || isSubmitting}
-            className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-          >
-            {isSubmitting ? '제출 중...' : '답안 제출'}
-          </button>
-          <button
-            type="button"
-            onClick={handleHint}
-            className="px-4 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-lg transition-colors"
-          >
-            힌트 💡
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={!userAnswer.trim() || isSubmitting}
+              className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+            >
+              {isSubmitting ? '제출 중...' : '답안 제출'}
+            </button>
+            <button
+              type="button"
+              onClick={handleHint}
+              disabled={isSubmitting}
+              className="px-4 py-3 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-300 text-white font-bold rounded-lg transition-colors"
+            >
+              힌트 💡
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* 답변 완료 후 상태 표시 */}
+      {feedback.type && (
+        <div className="space-y-4">
+          <div className="p-4 bg-gray-50 rounded-lg border">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              입력한 답:
+            </label>
+            <div className="bg-gray-100 px-4 py-3 rounded-lg text-gray-600 font-medium">
+              {feedback.type === 'correct' ? problem?.answer : userAnswer || '(입력 없음)'}
+            </div>
+          </div>
         </div>
-      </form>
+      )}
 
       {/* 힌트 표시 */}
       {problem.hint && hintsUsed > 0 && (
@@ -185,7 +205,10 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
             </>
           ) : (
             <button
-              onClick={() => setFeedback({ type: null, message: '' })}
+              onClick={() => {
+                setFeedback({ type: null, message: '' });
+                setUserAnswer('');
+              }}
               className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
             >
               다시 시도 🔄

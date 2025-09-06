@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import { SupabasePokemonService } from './services/SupabasePokemonService';
 import { SimpleProblemController } from './controllers/SimpleProblemController';
 import { SimpleGameController } from './controllers/SimpleGameController';
+import { PerformanceController } from './controllers/PerformanceController';
+import { SessionController } from './controllers/SessionController';
 import { PokemonImageDownloader } from './utils/imageDownloader';
 import { TemplateSystemInitializer } from './utils/initializeTemplateSystem';
 
@@ -22,6 +24,8 @@ app.use(express.json());
 const pokemonService = new SupabasePokemonService();
 const problemController = new SimpleProblemController();
 const gameController = new SimpleGameController();
+const performanceController = new PerformanceController();
+const sessionController = new SessionController();
 const templateInitializer = new TemplateSystemInitializer();
 
 // 기본 라우트
@@ -294,6 +298,20 @@ app.get('/api/users/:userId/pokedex/paginated', (req, res) => gameController.get
 app.get('/api/users/:userId/stats', (req, res) => gameController.getUserStats(req, res));
 app.get('/api/leaderboard', (req, res) => gameController.getLeaderboard(req, res));
 app.post('/api/pokemon/batch', (req, res) => gameController.getPokemonByIds(req, res));
+
+// 성능 최적화 관련 API 라우트
+app.post('/api/performance/optimize', (req, res) => performanceController.applyOptimizations(req, res));
+app.get('/api/performance/analyze', (req, res) => performanceController.analyzePerformance(req, res));
+app.get('/api/performance/indexes', (req, res) => performanceController.validateIndexes(req, res));
+app.get('/api/performance/status', (req, res) => performanceController.getOptimizationStatus(req, res));
+
+// 세션 캐시 관리 API 라우트
+app.get('/api/session/stats', (req, res) => sessionController.getSessionStats(req, res));
+app.get('/api/session/user/:userId', (req, res) => sessionController.getUserSessions(req, res));
+app.post('/api/session/cleanup', (req, res) => sessionController.cleanupSessions(req, res));
+app.delete('/api/session/user/:userId', (req, res) => sessionController.clearUserSessions(req, res));
+app.delete('/api/session/all', (req, res) => sessionController.clearAllSessions(req, res));
+app.get('/api/session/test', (req, res) => sessionController.performanceTest(req, res));
 
 // 에러 핸들링
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

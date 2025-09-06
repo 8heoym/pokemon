@@ -1,6 +1,8 @@
 import { supabase, Database } from '../config/supabase';
 import { User, UserAnswer } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+// 🚀 리팩토링: GameCalculations 클래스 사용으로 중복 제거
+import { GameCalculations } from '../utils/GameCalculations';
 
 type UserRow = Database['public']['Tables']['users']['Row'];
 type UserInsert = Database['public']['Tables']['users']['Insert'];
@@ -121,11 +123,11 @@ export class SupabaseGameService {
 
       if (pokemonError) throw pokemonError;
 
-      // 희귀도에 따른 경험치 계산
-      const experienceGained = this.calculateExperienceGain(pokemon.rarity);
+      // 🚀 리팩토링: GameCalculations 클래스 사용
+      const experienceGained = GameCalculations.calculateExperienceGain(pokemon.rarity);
       const newTotalExperience = user.totalExperience + experienceGained;
-      const currentLevel = this.calculateLevel(user.totalExperience);
-      const newLevel = this.calculateLevel(newTotalExperience);
+      const currentLevel = GameCalculations.calculateLevel(user.totalExperience);
+      const newLevel = GameCalculations.calculateLevel(newTotalExperience);
       const levelUp = newLevel > currentLevel;
 
       // 사용자 업데이트
@@ -357,20 +359,8 @@ export class SupabaseGameService {
     }
   }
 
-  private calculateExperienceGain(rarity: string): number {
-    const experienceMap: { [key: string]: number } = {
-      common: 10,
-      uncommon: 20,
-      rare: 50,
-      legendary: 100
-    };
-    return experienceMap[rarity] || 10;
-  }
-
-  private calculateLevel(totalExperience: number): number {
-    // 레벨 = √(총 경험치 / 100) + 1
-    return Math.floor(Math.sqrt(totalExperience / 100)) + 1;
-  }
+  // 🚀 리팩토링: 중복된 계산 메서드 제거 - GameCalculations 클래스 사용
+  // calculateExperienceGain과 calculateLevel 메서드는 GameCalculations로 이동됨
 
   private calculateTableStats(answers: UserAnswerRow[]) {
     const tableStats: { [key: number]: any } = {};
