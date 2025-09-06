@@ -362,32 +362,6 @@ export default function WelcomeScreen({
             </motion.form>
           </AnimatePresence>
 
-          {/* Game Features Preview */}
-          <motion.div 
-            className="features-grid"
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 1.0, duration: 0.6 }}
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <div className="feature-card">
-                <div className="feature-icon">🎮</div>
-                <p className="feature-text">게임화 학습</p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">📈</div>
-                <p className="feature-text">맞춤형 AI</p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">🏆</div>
-                <p className="feature-text">리더보드</p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">📱</div>
-                <p className="feature-text">모바일 최적화</p>
-              </div>
-            </div>
-          </motion.div>
 
           {/* Bottom Info */}
           <motion.div 
