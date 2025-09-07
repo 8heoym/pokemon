@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { User } from '@/types';
 import { userAPI } from '@/utils/api';
+import { normalizeUserDates } from '@/utils/dateUtils';
 import WelcomeScreen from '@/components/WelcomeScreen';
 import GameDashboard from '@/components/GameDashboard';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -18,7 +19,7 @@ export default function HomePage() {
       setError('');
       
       const response = await userAPI.create(nickname);
-      const newUser = response.data;
+      const newUser = normalizeUserDates(response.data);
       
       setCurrentUser(newUser);
       
@@ -39,7 +40,7 @@ export default function HomePage() {
       setError('');
       
       const response = await userAPI.get(userId);
-      const user = response.data;
+      const user = normalizeUserDates(response.data);
       
       setCurrentUser(user);
       
@@ -60,7 +61,7 @@ export default function HomePage() {
       const savedUser = localStorage.getItem('pokemonMathUser');
       if (savedUser) {
         try {
-          const user = JSON.parse(savedUser);
+          const user = normalizeUserDates(JSON.parse(savedUser));
           setCurrentUser(user);
           // 최신 정보로 업데이트
           handleLoadUser(user.id);

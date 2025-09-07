@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { User } from '@/types';
+import { canClaimDailyBonus } from '@/utils/dateUtils';
 
 interface StreakDisplayProps {
   user: User;
@@ -37,11 +38,7 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ user, onClaimDailyBonus }
     ? (user.currentStreak / nextMilestone) * 100 
     : 100;
 
-  const canClaimDailyBonus = () => {
-    const today = new Date().toDateString();
-    const lastActive = user.lastActiveDate.toDateString();
-    return today !== lastActive;
-  };
+  const canClaimBonus = () => canClaimDailyBonus(user.lastActiveDate);
 
   return (
     <motion.div
@@ -62,7 +59,7 @@ const StreakDisplay: React.FC<StreakDisplayProps> = ({ user, onClaimDailyBonus }
           </div>
         </div>
         
-        {canClaimDailyBonus() && onClaimDailyBonus && (
+        {canClaimBonus() && onClaimDailyBonus && (
           <motion.button
             onClick={onClaimDailyBonus}
             className="bg-yellow-500 hover:bg-yellow-400 text-yellow-900 font-bold py-2 px-4 rounded-lg transition-colors"

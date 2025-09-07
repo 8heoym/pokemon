@@ -2,7 +2,7 @@
 export interface StreakData {
   currentStreak: number;
   longestStreak: number;
-  lastActiveDate: string;
+  lastActiveDate: Date;
   streakRewards: StreakReward[];
 }
 

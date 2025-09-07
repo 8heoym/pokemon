@@ -6,9 +6,7 @@ const nextConfig = {
       'www.pokemonkorea.co.kr'
     ],
   },
-  env: {
-    BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:3001',
-  }
+  // Remove env section - use .env files instead for better security
 }
 
 module.exports = nextConfig

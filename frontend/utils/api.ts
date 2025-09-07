@@ -9,6 +9,7 @@ import {
   getCachedUserStats,
   getCachedPokedex
 } from '@/lib/cache';
+import { normalizeUserDates } from '@/utils/dateUtils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
@@ -38,17 +39,20 @@ api.interceptors.response.use(
 
 // 🚀 사용자 관련 API (캐시 적용)
 export const userAPI = {
-  create: (nickname: string) => 
-    api.post('/users', { nickname }),
+  create: async (nickname: string) => {
+    const response = await api.post('/users', { nickname });
+    return { data: normalizeUserDates(response.data) };
+  },
 
   // ✅ 캐시 적용: 사용자 프로필
   get: async (userId: string) => {
     try {
       const cachedData = await getCachedUserProfile(userId);
-      return { data: cachedData };
+      return { data: normalizeUserDates(cachedData) };
     } catch (error) {
       console.warn('캐시에서 사용자 조회 실패, 직접 API 호출:', error);
-      return api.get(`/users/${userId}`);
+      const response = await api.get(`/users/${userId}`);
+      return { data: normalizeUserDates(response.data) };
     }
   },
 
