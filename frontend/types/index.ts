@@ -138,7 +138,7 @@ export interface ShopItem {
   name: string;
   description: string;
   price: number;
-  type: 'cosmetic' | 'functional' | 'collection';
+  type: 'cosmetic' | 'functional' | 'collection' | 'pokemon_accessory' | 'streak_protection' | 'xp_booster' | 'special_collection';
   imageUrl: string;
   available: boolean;
   purchasedAt?: Date;

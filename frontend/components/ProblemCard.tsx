@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PokemonImageCard from './PokemonImageCard';
+import StarDustAnimation from './animations/StarDustAnimation';
+import PokemonReaction from './animations/PokemonReaction';
+import HintBubble from './ui/HintBubble';
+import { useAnimationSequence } from '@/hooks/useAnimationSequence';
 
 interface Pokemon {
   id: number;
@@ -45,6 +49,26 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   });
   const [startTime] = useState(Date.now());
   const [hintsUsed, setHintsUsed] = useState(0);
+  const [showHintBubble, setShowHintBubble] = useState(false);
+  
+  // PRD [F-3.2]: 동적 피드백 시스템
+  const {
+    animationState,
+    triggerCorrectAnswer,
+    triggerIncorrectAnswer,
+    triggerHintRequest,
+    triggerProblemStart,
+    setIdleState,
+    handleStarDustComplete,
+    handlePokemonReactionComplete
+  } = useAnimationSequence();
+
+  // 문제 시작 시 격려 애니메이션
+  useEffect(() => {
+    if (problem) {
+      triggerProblemStart();
+    }
+  }, [problem, triggerProblemStart]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +79,10 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         const result = await onAnswerSubmit(parseInt(userAnswer), timeSpent, hintsUsed);
         
         if (result.isCorrect) {
+          // PRD [F-3.2]: 정답 시 별의모래 애니메이션 + 파트너 포켓몬 기쁨 표현
+          const starDustAmount = result.experience || 10; // 획득한 경험치만큼 별의모래
+          triggerCorrectAnswer(starDustAmount, 50, 60); // 화면 중앙에서 시작
+          
           setFeedback({
             type: 'correct',
             message: result.pokemonCaught?.success 
@@ -64,6 +92,9 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           // 정답인 경우에만 답변 초기화
           setUserAnswer('');
         } else {
+          // PRD [F-3.2]: 오답 시 파트너 포켓몬 아쉬움 표현
+          triggerIncorrectAnswer();
+          
           setFeedback({
             type: 'incorrect',
             message: '틀렸어요. 다시 생각해보세요!'
@@ -84,7 +115,13 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
   const handleHint = () => {
     setHintsUsed(prev => prev + 1);
-    // 여기서 힌트를 표시하거나 처리할 수 있습니다
+    // PRD [F-3.3]: 힌트 요청 시 도우미 포켓몬 등장
+    triggerHintRequest();
+    setShowHintBubble(true);
+  };
+
+  const handleCloseHint = () => {
+    setShowHintBubble(false);
   };
 
   if (isSubmitting) {
@@ -218,6 +255,31 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           )}
         </div>
       )}
+
+      {/* PRD [F-3.2]: 동적 피드백 애니메이션 */}
+      <StarDustAnimation
+        isActive={animationState.starDust.isActive}
+        amount={animationState.starDust.amount}
+        sourceX={animationState.starDust.sourceX}
+        sourceY={animationState.starDust.sourceY}
+        onComplete={handleStarDustComplete}
+      />
+      
+      <PokemonReaction
+        isVisible={animationState.pokemonReaction.isVisible}
+        reaction={animationState.pokemonReaction.reaction}
+        pokemonName={pokemon?.koreanName || '파트너'}
+        onComplete={handlePokemonReactionComplete}
+      />
+
+      {/* PRD [F-3.3]: 인터랙티브 힌트 시스템 */}
+      <HintBubble
+        isVisible={!!(showHintBubble && hintsUsed > 0 && problem?.hint)}
+        hintText={problem?.hint || ''}
+        helperPokemon="rotom"
+        onClose={handleCloseHint}
+        position="bottom-right"
+      />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, MathProblem, Pokemon } from '@/types';
 import { MULTIPLICATION_ORDER, calculateLevel, getLevelProgress } from '@/utils/gameUtils';
+import { calculateStarDustReward } from '@/utils/economyBalancing';
 import { useProblems, useUsers } from '@/hooks/useApiCall';
 import UserProfile from './UserProfile';
 import AdventureMap from './AdventureMap';
@@ -16,6 +17,8 @@ import StreakDisplay from './StreakDisplay';
 import StarDustDisplay from './StarDustDisplay';
 import BadgeShop from './BadgeShop';
 import BadgeCase from './BadgeCase';
+import BadgeUnlockAnimation from './animations/BadgeUnlockAnimation';
+import { useBadgeSystem } from '@/hooks/useBadgeSystem';
 import { PokemonCard, PokemonButton } from './ui';
 
 interface GameDashboardProps {
@@ -44,6 +47,14 @@ export default function GameDashboard({
   
   // 🚀 메모리 누수 방지: 타이머 참조 저장
   const confettiTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // PRD [F-1.6]: 배지 시스템
+  const {
+    pendingBadgeUnlock,
+    checkForNewBadges,
+    initializeBadgeSystem,
+    handleBadgeUnlockComplete
+  } = useBadgeSystem();
 
   // 🚀 공통 API 훅 사용
   const { generateProblem, submitAnswer } = useProblems();
@@ -91,8 +102,17 @@ export default function GameDashboard({
     if (result) {
       // Phase 2: 정답 시 별의모래 및 스트릭 업데이트
       if (result.isCorrect) {
-        // 별의모래 획득 (기본 10, 첫 시도 성공 시 15)
-        const starDustEarned = hintsUsed === 0 ? 15 : 10;
+        // Phase 2.3: 개선된 별의모래 계산 시스템
+        const regionNumber = selectedStage?.regionId || 2;
+        const difficulty = currentProblem?.difficulty === 3 ? 'hard' : 
+                          currentProblem?.difficulty === 2 ? 'normal' : 'easy';
+        const starDustEarned = calculateStarDustReward(
+          10, // 기본 보상
+          hintsUsed,
+          user.currentStreak,
+          difficulty,
+          regionNumber
+        );
         setRecentStarDust(starDustEarned);
         
         // 스트릭 업데이트 API 호출
@@ -224,6 +244,12 @@ export default function GameDashboard({
       return () => clearTimeout(timer);
     }
   }, [recentStarDust]);
+
+  // PRD [F-1.6]: 배지 시스템 초기화 및 새 배지 체크
+  useEffect(() => {
+    initializeBadgeSystem(user);
+    checkForNewBadges(user);
+  }, [user.completedTables, initializeBadgeSystem, checkForNewBadges, user]);
 
   if (isLoadingProblem) {
     return <LoadingScreen message="새로운 포켓몬 문제를 준비하는 중..." />;
@@ -399,6 +425,15 @@ export default function GameDashboard({
         </PokemonCard>
       </motion.div>
 
+      {/* PRD [F-1.6]: 배지 획득 축하 애니메이션 */}
+      <BadgeUnlockAnimation
+        isVisible={!!pendingBadgeUnlock}
+        badgeName={pendingBadgeUnlock?.name || ''}
+        badgeDescription={pendingBadgeUnlock?.description || ''}
+        badgeEmoji={pendingBadgeUnlock?.emoji || '🏆'}
+        regionTheme={pendingBadgeUnlock?.regionTheme || 'grassland'}
+        onComplete={handleBadgeUnlockComplete}
+      />
     </div>
   );
 }

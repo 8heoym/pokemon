@@ -177,10 +177,9 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
               </motion.div>
             </div>
 
-            {/* PRD [F-1.4] 스테이지 경로 */}
+            {/* PRD [F-1.4] 스테이지 경로 - 자연스러운 길 형태 */}
             <div className="stages-path flex-1 max-w-2xl">
-              <div className={`grid gap-3 ${region.stages.length <= 5 ? 'grid-cols-5' : 
-                             region.stages.length <= 8 ? 'grid-cols-4' : 'grid-cols-5'}`}>
+              <div className="flex flex-wrap justify-center gap-4 relative">
                 {region.stages.map((stage, stageIndex) => {
                   const visualConfig = STAGE_VISUAL_CONFIG[stage.isCompleted ? 
                     STAGE_STATUS.COMPLETED : 
@@ -188,7 +187,21 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
                   ];
 
                   return (
-                    <motion.button
+                    <React.Fragment key={`stage-group-${stage.id}`}>
+                      {/* 스테이지들 사이의 연결 경로 */}
+                      {stageIndex > 0 && (
+                        <div className="flex items-center justify-center">
+                          <div className={`w-8 h-1 rounded ${
+                            region.stages[stageIndex - 1].isCompleted ? 'bg-yellow-400' : 'bg-gray-300'
+                          }`} />
+                          <div className="text-lg mx-1">✨</div>
+                          <div className={`w-8 h-1 rounded ${
+                            stage.isCompleted ? 'bg-yellow-400' : 'bg-gray-300'
+                          }`} />
+                        </div>
+                      )}
+
+                      <motion.button
                       key={stage.id}
                       className={`stage-button relative p-4 rounded-xl border-2 transition-all duration-200
                                  ${visualConfig.bgColor} ${visualConfig.textColor} ${visualConfig.borderColor}
@@ -236,6 +249,7 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
                         </div>
                       )}
                     </motion.button>
+                    </React.Fragment>
                   );
                 })}
               </div>

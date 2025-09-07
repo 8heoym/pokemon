@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, ShopItem } from '@/types';
+import { getAdjustedPrice } from '@/utils/economyBalancing';
 import { PokemonCard, PokemonButton } from './ui';
 
 interface BadgeShopProps {
@@ -15,6 +16,18 @@ const BadgeShop: React.FC<BadgeShopProps> = ({ user, isOpen, onClose, onPurchase
   const [loading, setLoading] = useState(false);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  // PRD [F-2.2]: 카테고리 정의
+  const categories = [
+    { id: 'all', name: '전체', emoji: '🛍️' },
+    { id: 'pokemon_accessory', name: '포켓몬 액세서리', emoji: '👑' },
+    { id: 'streak_protection', name: '연속 학습 보호', emoji: '🛡️' },
+    { id: 'xp_booster', name: 'XP 부스터', emoji: '⚡' },
+    { id: 'special_collection', name: '특별 컬렉션', emoji: '💎' },
+    { id: 'functional', name: '기능성 아이템', emoji: '🔧' },
+    { id: 'cosmetic', name: '장식용 아이템', emoji: '✨' }
+  ];
 
   // Mock shop items (in real app, fetch from API)
   const mockShopItems: ShopItem[] = [
@@ -68,15 +81,123 @@ const BadgeShop: React.FC<BadgeShopProps> = ({ user, isOpen, onClose, onPurchase
       available: user.trainerLevel >= 20,
       purchasedAt: user.purchasedItems?.includes('legendary_collector') ? new Date() : undefined
     },
+
+    // PRD [F-2.2]: 포켓몬 액세서리 확장
     {
-      id: 'streak_protector',
-      name: '연속 학습 보호막',
-      description: '하루 놓쳐도 연속 기록이 끊어지지 않음 (1회용)',
+      id: 'pikachu_thunder_headband',
+      name: '피카츄의 번개 머리띠',
+      description: '2단 문제 정답 시 추가 별의모래 +5',
       price: 300,
-      type: 'functional',
-      imageUrl: '/images/items/streak_protector.png',
+      type: 'pokemon_accessory',
+      imageUrl: '/images/items/pikachu_headband.png',
+      available: user.completedTables.includes(2),
+      purchasedAt: user.purchasedItems?.includes('pikachu_thunder_headband') ? new Date() : undefined
+    },
+    {
+      id: 'eevee_ribbon',
+      name: '이브이의 리본',
+      description: '파트너 포켓몬 감정 표현이 더 생생해집니다',
+      price: 400,
+      type: 'pokemon_accessory',
+      imageUrl: '/images/items/eevee_ribbon.png',
+      available: user.currentStreak >= 3,
+      purchasedAt: user.purchasedItems?.includes('eevee_ribbon') ? new Date() : undefined
+    },
+    {
+      id: 'squirtle_cool_sunglasses',
+      name: '꼬부기의 멋진 선글라스',
+      description: '3단 문제 풀이 시 힌트 사용 횟수 +1',
+      price: 250,
+      type: 'pokemon_accessory',
+      imageUrl: '/images/items/squirtle_sunglasses.png',
+      available: user.completedTables.includes(3),
+      purchasedAt: user.purchasedItems?.includes('squirtle_cool_sunglasses') ? new Date() : undefined
+    },
+    {
+      id: 'bulbasaur_flower_crown',
+      name: '이상해씨의 꽃 왕관',
+      description: '4단 지역에서 포켓몬 포획 확률 15% 증가',
+      price: 350,
+      type: 'pokemon_accessory',
+      imageUrl: '/images/items/bulbasaur_crown.png',
+      available: user.completedTables.includes(4),
+      purchasedAt: user.purchasedItems?.includes('bulbasaur_flower_crown') ? new Date() : undefined
+    },
+    {
+      id: 'charmander_fire_cape',
+      name: '파이리의 불꽃 망토',
+      description: '연속 정답 시 경험치 보너스 10% 추가',
+      price: 450,
+      type: 'pokemon_accessory',
+      imageUrl: '/images/items/charmander_cape.png',
+      available: user.completedTables.includes(5),
+      purchasedAt: user.purchasedItems?.includes('charmander_fire_cape') ? new Date() : undefined
+    },
+
+    // PRD [F-2.2]: 연속 학습 보호 아이템 - Phase 2.3 가격 조정
+    {
+      id: 'articuno_freeze_shield',
+      name: '프리저의 얼음 방패',
+      description: '연속 학습 기록 1일 보호 (1회용)',
+      price: getAdjustedPrice('articuno_freeze_shield', 600),
+      type: 'streak_protection',
+      imageUrl: '/images/items/freeze_shield.png',
       available: user.currentStreak >= 7,
-      purchasedAt: user.purchasedItems?.includes('streak_protector') ? new Date() : undefined
+      purchasedAt: user.purchasedItems?.includes('articuno_freeze_shield') ? new Date() : undefined
+    },
+    {
+      id: 'zapdos_thunder_barrier',
+      name: '썬더의 번개 장벽',
+      description: '연속 학습 기록 3일 보호 (1회용)',
+      price: getAdjustedPrice('zapdos_thunder_barrier', 1500),
+      type: 'streak_protection',
+      imageUrl: '/images/items/thunder_barrier.png',
+      available: user.currentStreak >= 14,
+      purchasedAt: user.purchasedItems?.includes('zapdos_thunder_barrier') ? new Date() : undefined
+    },
+
+    // PRD [F-2.2]: XP 부스터 확장
+    {
+      id: 'lucky_egg',
+      name: '럭키의 경험의 알',
+      description: '2시간 동안 경험치 2배 획득',
+      price: 800,
+      type: 'xp_booster',
+      imageUrl: '/images/items/lucky_egg.png',
+      available: user.trainerLevel >= 8,
+      purchasedAt: user.purchasedItems?.includes('lucky_egg') ? new Date() : undefined
+    },
+    {
+      id: 'rare_candy',
+      name: '이상한 사탕',
+      description: '즉시 레벨업 (레벨당 1회 제한)',
+      price: getAdjustedPrice('rare_candy', 2500),
+      type: 'xp_booster', 
+      imageUrl: '/images/items/rare_candy.png',
+      available: user.trainerLevel >= 15 && user.completedTables.length >= 5,
+      purchasedAt: user.purchasedItems?.includes('rare_candy') ? new Date() : undefined
+    },
+
+    // 특별 컬렉션 아이템
+    {
+      id: 'master_trainer_badge',
+      name: '마스터 트레이너 배지',
+      description: '모든 구구단 완료 시 특별 배지',
+      price: getAdjustedPrice('master_trainer_badge', 5000),
+      type: 'special_collection',
+      imageUrl: '/images/items/master_badge.png',
+      available: user.completedTables.length >= 8,
+      purchasedAt: user.purchasedItems?.includes('master_trainer_badge') ? new Date() : undefined
+    },
+    {
+      id: 'pokemon_professor_lab_coat',
+      name: '포켓몬 박사 실험복',
+      description: '모든 포켓몬과의 친밀도 상승 효과',
+      price: 3000,
+      type: 'special_collection',
+      imageUrl: '/images/items/lab_coat.png',
+      available: user.trainerLevel >= 25,
+      purchasedAt: user.purchasedItems?.includes('pokemon_professor_lab_coat') ? new Date() : undefined
     }
   ];
 
@@ -90,6 +211,11 @@ const BadgeShop: React.FC<BadgeShopProps> = ({ user, isOpen, onClose, onPurchase
       }, 500);
     }
   }, [isOpen, user]);
+
+  // 필터된 아이템 목록
+  const filteredItems = shopItems.filter(item => 
+    selectedCategory === 'all' || item.type === selectedCategory
+  );
 
   const handlePurchase = async (item: ShopItem) => {
     if (!item.available || item.purchasedAt || user.starDust < item.price) {
@@ -126,6 +252,10 @@ const BadgeShop: React.FC<BadgeShopProps> = ({ user, isOpen, onClose, onPurchase
       case 'functional': return '⚡';
       case 'cosmetic': return '🎨';
       case 'collection': return '🏆';
+      case 'pokemon_accessory': return '👑';
+      case 'streak_protection': return '🛡️';
+      case 'xp_booster': return '⚡';
+      case 'special_collection': return '💎';
       default: return '🎁';
     }
   };
@@ -135,6 +265,10 @@ const BadgeShop: React.FC<BadgeShopProps> = ({ user, isOpen, onClose, onPurchase
       case 'functional': return 'from-blue-500 to-blue-600';
       case 'cosmetic': return 'from-purple-500 to-purple-600';
       case 'collection': return 'from-yellow-500 to-yellow-600';
+      case 'pokemon_accessory': return 'from-pink-500 to-pink-600';
+      case 'streak_protection': return 'from-green-500 to-green-600';
+      case 'xp_booster': return 'from-orange-500 to-orange-600';
+      case 'special_collection': return 'from-indigo-500 to-indigo-600';
       default: return 'from-gray-500 to-gray-600';
     }
   };
@@ -184,6 +318,28 @@ const BadgeShop: React.FC<BadgeShopProps> = ({ user, isOpen, onClose, onPurchase
             </div>
           </div>
 
+          {/* PRD [F-2.2]: 카테고리 탭 */}
+          <div className="bg-gray-50 px-6 py-4 border-b">
+            <div className="flex space-x-2 overflow-x-auto">
+              {categories.map(category => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all
+                    ${selectedCategory === category.id 
+                      ? 'bg-blue-500 text-white shadow-md' 
+                      : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+                >
+                  <span className="text-lg">{category.emoji}</span>
+                  <span className="text-sm font-medium">{category.name}</span>
+                  <span className="text-xs bg-black bg-opacity-20 px-2 py-1 rounded-full">
+                    {category.id === 'all' ? shopItems.length : shopItems.filter(item => item.type === category.id).length}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Message */}
           {message && (
             <motion.div
@@ -205,7 +361,7 @@ const BadgeShop: React.FC<BadgeShopProps> = ({ user, isOpen, onClose, onPurchase
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {shopItems.map((item) => (
+                {filteredItems.map((item) => (
                   <motion.div
                     key={item.id}
                     className="relative"
