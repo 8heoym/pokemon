@@ -3,6 +3,12 @@ import { normalizeUserDates } from '@/utils/dateUtils';
 
 // API 기본 URL
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
+const CACHE_BUST_VERSION = '20250907-001';
+
+const createCacheBustUrl = (url: string) => {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}_t=${Date.now()}&_v=${CACHE_BUST_VERSION}`;
+};
 
 // 🎯 포켓몬 데이터 - 직접 API 호출
 export const getCachedPokemon = async (pokemonId: number) => {
@@ -77,12 +83,22 @@ export const getCachedPokemonStats = async () => {
 
 // 👤 사용자 프로필 - 직접 API 호출 (날짜 정규화 포함)
 export const getCachedUserProfile = async (userId: string) => {
-  console.log(`👤 사용자 ${userId} 프로필 - DB에서 직접 조회`);
+  const encodedUserId = encodeURIComponent(userId);
+  console.log(`👤 사용자 ${userId} (${encodedUserId}) 프로필 - DB에서 직접 조회 (v${CACHE_BUST_VERSION})`);
   
-  const response = await fetch(`${API_BASE}/users/${userId}`);
+  const url = createCacheBustUrl(`${API_BASE}/users/${encodedUserId}`);
+  const response = await fetch(url, {
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
   
   if (!response.ok) {
-    throw new Error(`User ${userId} not found`);
+    console.error(`🚨 사용자 조회 실패: ${response.status} ${response.statusText}`);
+    console.error(`🔗 요청 URL: ${url}`);
+    throw new Error(`User ${userId} not found (Status: ${response.status})`);
   }
   
   const data = await response.json();
@@ -91,9 +107,10 @@ export const getCachedUserProfile = async (userId: string) => {
 
 // 📈 사용자 통계 - 직접 API 호출
 export const getCachedUserStats = async (userId: string) => {
-  console.log(`📈 사용자 ${userId} 통계 - DB에서 직접 조회`);
+  const encodedUserId = encodeURIComponent(userId);
+  console.log(`📈 사용자 ${userId} (${encodedUserId}) 통계 - DB에서 직접 조회`);
   
-  const response = await fetch(`${API_BASE}/users/${userId}/stats`);
+  const response = await fetch(`${API_BASE}/users/${encodedUserId}/stats`);
   
   if (!response.ok) {
     throw new Error(`User stats ${userId} not found`);
@@ -105,9 +122,10 @@ export const getCachedUserStats = async (userId: string) => {
 
 // 🗂️ 포켓몬 도감 - 직접 API 호출
 export const getCachedPokedex = async (userId: string) => {
-  console.log(`🗂️ 사용자 ${userId} 포켓몬 도감 - DB에서 직접 조회`);
+  const encodedUserId = encodeURIComponent(userId);
+  console.log(`🗂️ 사용자 ${userId} (${encodedUserId}) 포켓몬 도감 - DB에서 직접 조회`);
   
-  const response = await fetch(`${API_BASE}/users/${userId}/pokedex`);
+  const response = await fetch(`${API_BASE}/users/${encodedUserId}/pokedex`);
   
   if (!response.ok) {
     throw new Error(`Pokedex for user ${userId} not found`);

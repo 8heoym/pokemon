@@ -12,18 +12,28 @@ import {
 import { normalizeUserDates } from '@/utils/dateUtils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+const DEPLOYMENT_VERSION = '20250907-001';
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'X-Deploy-Version': DEPLOYMENT_VERSION,
   },
 });
 
 // 요청/응답 인터셉터 (필요시 토큰 추가 등)
 api.interceptors.request.use(
   (config) => {
-    // 여기서 토큰 추가 가능
+    const timestamp = Date.now();
+    config.params = {
+      ...config.params,
+      _t: timestamp,
+      _v: DEPLOYMENT_VERSION
+    };
     return config;
   },
   (error) => Promise.reject(error)
@@ -51,13 +61,16 @@ export const userAPI = {
       return { data: normalizeUserDates(cachedData) };
     } catch (error) {
       console.warn('캐시에서 사용자 조회 실패, 직접 API 호출:', error);
-      const response = await api.get(`/users/${userId}`);
+      const encodedUserId = encodeURIComponent(userId);
+      const response = await api.get(`/users/${encodedUserId}`);
       return { data: normalizeUserDates(response.data) };
     }
   },
 
-  getProgress: (userId: string) => 
-    api.get(`/users/${userId}/progress`),
+  getProgress: (userId: string) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.get(`/users/${encodedUserId}/progress`);
+  },
 
   // ✅ 캐시 적용: 사용자 통계  
   getStats: async (userId: string) => {
@@ -66,7 +79,8 @@ export const userAPI = {
       return { data: cachedData };
     } catch (error) {
       console.warn('캐시에서 사용자 통계 조회 실패, 직접 API 호출:', error);
-      return api.get(`/users/${userId}/stats`);
+      const encodedUserId = encodeURIComponent(userId);
+      return api.get(`/users/${encodedUserId}/stats`);
     }
   },
 
@@ -77,16 +91,21 @@ export const userAPI = {
       return { data: cachedData };
     } catch (error) {
       console.warn('캐시에서 도감 조회 실패, 직접 API 호출:', error);
-      return api.get(`/users/${userId}/pokedex`);
+      const encodedUserId = encodeURIComponent(userId);
+      return api.get(`/users/${encodedUserId}/pokedex`);
     }
   },
 
-  getPokedexPaginated: (userId: string, page: number = 1, limit: number = 50, filter: string = 'all') => 
-    api.get(`/users/${userId}/pokedex/paginated`, { params: { page, limit, filter } }),
+  getPokedexPaginated: (userId: string, page: number = 1, limit: number = 50, filter: string = 'all') => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.get(`/users/${encodedUserId}/pokedex/paginated`, { params: { page, limit, filter } });
+  },
 
   // 실시간 액션은 캐시 미적용 (포켓몬 잡기)
-  catchPokemon: (userId: string, pokemonId: number) => 
-    api.post(`/users/${userId}/catch`, { pokemonId }),
+  catchPokemon: (userId: string, pokemonId: number) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.post(`/users/${encodedUserId}/catch`, { pokemonId });
+  },
 };
 
 // 문제 관련 API
@@ -97,8 +116,10 @@ export const problemAPI = {
   submit: (userId: string, problemId: string, userAnswer: number, timeSpent: number, hintsUsed: number = 0) =>
     api.post('/problems/submit', { userId, problemId, answer: userAnswer, timeSpent, hintsUsed }),
 
-  getHint: (problemId: string, userId: string) =>
-    api.get(`/problems/${problemId}/hint/${userId}`),
+  getHint: (problemId: string, userId: string) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.get(`/problems/${problemId}/hint/${encodedUserId}`);
+  },
 };
 
 // 🚀 포켓몬 관련 API (캐시 적용)
@@ -178,14 +199,18 @@ export const sessionAPI = {
   getStats: () => 
     api.get('/session/stats'),
   
-  getUserSessions: (userId: string) => 
-    api.get(`/session/user/${userId}`),
+  getUserSessions: (userId: string) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.get(`/session/user/${encodedUserId}`);
+  },
   
   cleanup: () => 
     api.post('/session/cleanup'),
   
-  clearUserSessions: (userId: string) => 
-    api.delete(`/session/user/${userId}`),
+  clearUserSessions: (userId: string) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.delete(`/session/user/${encodedUserId}`);
+  },
   
   clearAll: () => 
     api.delete('/session/all'),
