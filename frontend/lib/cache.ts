@@ -2,7 +2,9 @@
 import { normalizeUserDates } from '@/utils/dateUtils';
 
 // API 기본 URL
-const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL 
+  ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api`
+  : 'http://localhost:3001/api';
 const CACHE_BUST_VERSION = '20250907-001';
 
 const createCacheBustUrl = (url: string) => {
