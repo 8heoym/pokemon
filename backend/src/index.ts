@@ -11,6 +11,8 @@ import { MotivationController } from './controllers/MotivationController';
 import { DatabaseSchemaUpdater } from './utils/updateDatabaseSchema';
 import { PokemonImageDownloader } from './utils/imageDownloader';
 import { TemplateSystemInitializer } from './utils/initializeTemplateSystem';
+import { SchemaFixController } from './controllers/SchemaFixController';
+import { CompatibilityMotivationController } from './controllers/CompatibilityMotivationController';
 
 // 환경변수 로드
 dotenv.config();
@@ -31,6 +33,8 @@ const sessionController = new SessionController();
 const motivationController = new MotivationController();
 const schemaUpdater = new DatabaseSchemaUpdater();
 const templateInitializer = new TemplateSystemInitializer();
+const schemaFixController = new SchemaFixController();
+const compatibilityController = new CompatibilityMotivationController();
 
 // 기본 라우트
 app.get('/', (req, res) => {
@@ -357,6 +361,23 @@ app.get('/api/database/schema-status', async (req, res) => {
     });
   }
 });
+
+// Schema Fix API 라우트 (문제 해결 전용)
+app.get('/api/schema-fix/inspect', (req, res) => schemaFixController.inspectSchema(req, res));
+app.get('/api/schema-fix/test-rpcs', (req, res) => schemaFixController.testRPCs(req, res));
+app.post('/api/schema-fix/add-columns', (req, res) => schemaFixController.addColumnsIndividually(req, res));
+app.post('/api/schema-fix/workaround', (req, res) => schemaFixController.createWorkaround(req, res));
+app.post('/api/schema-fix/comprehensive', (req, res) => schemaFixController.fixSchemaComprehensive(req, res));
+
+// Compatibility Mode API 라우트 (스키마 변경 없이 Phase 2 기능)
+app.post('/api/compat/users/:userId/streak', (req, res) => compatibilityController.updateStreak(req, res));
+app.post('/api/compat/users/:userId/daily-bonus', (req, res) => compatibilityController.claimDailyBonus(req, res));
+app.post('/api/compat/users/:userId/stardust', (req, res) => compatibilityController.awardStarDust(req, res));
+app.get('/api/compat/users/:userId/shop', (req, res) => compatibilityController.getShopItems(req, res));
+app.post('/api/compat/users/:userId/purchase', (req, res) => compatibilityController.purchaseItem(req, res));
+app.post('/api/compat/users/:userId/badge', (req, res) => compatibilityController.awardBadge(req, res));
+app.get('/api/compat/users/:userId/motivation-stats', (req, res) => compatibilityController.getMotivationStats(req, res));
+app.get('/api/compat/status', (req, res) => compatibilityController.getCompatibilityStatus(req, res));
 
 // 에러 핸들링
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

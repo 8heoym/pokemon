@@ -1,16 +1,39 @@
 import { supabase } from '../config/supabase';
 import { User, StreakData, StarDustTransaction, Badge, ShopItem } from '../types';
 import { SupabaseGameService } from './SupabaseGameService';
+import { Phase2CompatibilityService } from './Phase2CompatibilityService';
 
 export class MotivationService {
   private gameService: SupabaseGameService;
+  private compatibilityService: Phase2CompatibilityService;
 
   constructor() {
     this.gameService = new SupabaseGameService();
+    this.compatibilityService = new Phase2CompatibilityService();
   }
 
   // Streak System
   async updateUserStreak(userId: string): Promise<StreakData> {
+    try {
+      console.log('🔄 스트릭 업데이트 (호환성 모드):', userId);
+      
+      // 호환성 서비스 사용
+      const result = await this.compatibilityService.updateUserStreak(userId);
+      
+      if (!result.success) {
+        throw new Error('스트릭 업데이트 실패');
+      }
+      
+      return result.streakData;
+
+    } catch (error) {
+      console.error('Streak 업데이트 실패 (호환성 모드):', error);
+      throw error;
+    }
+  }
+
+  // 기존 메서드들도 호환성 모드로 업데이트
+  async updateUserStreakOriginal(userId: string): Promise<StreakData> {
     try {
       const user = await this.gameService.getUserById(userId);
       if (!user) throw new Error('사용자를 찾을 수 없습니다.');
