@@ -50,6 +50,8 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [startTime] = useState(Date.now());
   const [hintsUsed, setHintsUsed] = useState(0);
   const [showHintBubble, setShowHintBubble] = useState(false);
+  const [autoNextTimer, setAutoNextTimer] = useState(0);
+  const [showAutoNextOptions, setShowAutoNextOptions] = useState(false);
   
   // PRD [F-3.2]: 동적 피드백 시스템
   const {
@@ -69,6 +71,33 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       triggerProblemStart();
     }
   }, [problem, triggerProblemStart]);
+
+  // 자동 진행 타이머 (정답 후 5초 대기)
+  useEffect(() => {
+    if (showAutoNextOptions && feedback.type === 'correct') {
+      setAutoNextTimer(5);
+      
+      const countdown = setInterval(() => {
+        setAutoNextTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(countdown);
+            // 자동으로 다음 문제로 진행
+            onNextProblem();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(countdown);
+    }
+  }, [showAutoNextOptions, feedback.type, onNextProblem]);
+
+  // 타이머 취소 함수
+  const cancelAutoNext = () => {
+    setAutoNextTimer(0);
+    setShowAutoNextOptions(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +120,9 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           });
           // 정답인 경우에만 답변 초기화
           setUserAnswer('');
+          
+          // 자동 진행 옵션 표시
+          setShowAutoNextOptions(true);
         } else {
           // PRD [F-3.2]: 오답 시 파트너 포켓몬 아쉬움 표현
           triggerIncorrectAnswer();
@@ -226,32 +258,75 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
       {/* 정답/오답 후 버튼들 */}
       {feedback.type && (
-        <div className="mt-4 flex gap-3">
+        <div className="mt-4 space-y-3">
           {feedback.type === 'correct' ? (
             <>
-              <button
-                onClick={onNextProblem}
-                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-              >
-                다음 문제 ➡️
-              </button>
-              <button
-                onClick={onBackToSelect}
-                className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-lg transition-colors"
-              >
-                구구단 선택
-              </button>
+              {/* 정답 시 진행 옵션 */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="text-green-800 font-medium mb-3 flex items-center justify-between">
+                  <span>🎉 정답입니다! 다음은 어떻게 하시겠어요?</span>
+                  {autoNextTimer > 0 && (
+                    <div className="flex items-center text-sm bg-green-100 px-2 py-1 rounded">
+                      <span className="mr-1">⏱️</span>
+                      <span>{autoNextTimer}초 후 자동 진행</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      cancelAutoNext();
+                      onNextProblem();
+                    }}
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+                  >
+                    <span className="mr-2">⚡</span>
+                    같은 스테이지 계속하기
+                    {autoNextTimer > 0 && (
+                      <span className="ml-2 text-xs bg-green-400 px-2 py-1 rounded">
+                        {autoNextTimer}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      cancelAutoNext();
+                      onBackToSelect();
+                    }}
+                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+                  >
+                    <span className="mr-2">🗺️</span>
+                    모험 지도로 돌아가기
+                  </button>
+                </div>
+                {autoNextTimer > 0 && (
+                  <button
+                    onClick={cancelAutoNext}
+                    className="w-full mt-2 text-sm text-green-600 hover:text-green-800 underline"
+                  >
+                    자동 진행 취소
+                  </button>
+                )}
+              </div>
             </>
           ) : (
-            <button
-              onClick={() => {
-                setFeedback({ type: null, message: '' });
-                setUserAnswer('');
-              }}
-              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-            >
-              다시 시도 🔄
-            </button>
+            <>
+              {/* 오답 시 재시도 옵션 */}
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="text-orange-800 font-medium mb-3 flex items-center">
+                  💪 다시 한번 도전해보세요!
+                </div>
+                <button
+                  onClick={() => {
+                    setFeedback({ type: null, message: '' });
+                    setUserAnswer('');
+                  }}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                >
+                  다시 시도하기 🔄
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}

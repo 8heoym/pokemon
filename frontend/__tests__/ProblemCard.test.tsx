@@ -26,9 +26,30 @@ const mockProblem: MathProblem = {
   }
 };
 
+const mockPokemon = {
+  id: 25,
+  name: 'pikachu',
+  koreanName: '피카츄',
+  imageUrl: '/images/pokemon/25.png',
+  rarity: 'common'
+};
+
+const mockUser = {
+  id: 'test-user',
+  nickname: '테스트사용자',
+  completedTables: [2, 3],
+  totalExperience: 100,
+  currentStreak: 5
+};
+
 describe('ProblemCard', () => {
-  const mockOnAnswer = jest.fn();
-  const mockOnNext = jest.fn();
+  const mockOnAnswerSubmit = jest.fn().mockResolvedValue({ 
+    isCorrect: true, 
+    experience: 10,
+    pokemonCaught: null 
+  });
+  const mockOnNextProblem = jest.fn();
+  const mockOnBackToSelect = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -38,9 +59,11 @@ describe('ProblemCard', () => {
     render(
       <ProblemCard
         problem={mockProblem}
-        onAnswer={mockOnAnswer}
-        onNext={mockOnNext}
-        userId="test-user-id"
+        pokemon={mockPokemon}
+        user={mockUser}
+        onAnswerSubmit={mockOnAnswerSubmit}
+        onNextProblem={mockOnNextProblem}
+        onBackToSelect={mockOnBackToSelect}
       />
     );
 
