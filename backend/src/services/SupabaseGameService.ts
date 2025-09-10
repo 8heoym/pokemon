@@ -68,18 +68,95 @@ export class SupabaseGameService {
 
   async getUserByNickname(nickname: string): Promise<User | null> {
     try {
-      const { data, error } = await supabase
+      console.log('🔍 강화된 닉네임 조회 시작:', {
+        nickname,
+        length: nickname.length,
+        bytes: Buffer.from(nickname).toString('hex'),
+        trimmed: nickname.trim(),
+        normalized: nickname.normalize('NFC')
+      });
+
+      // 1차: 정확한 매칭
+      let { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('nickname', nickname)
         .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') return null; // Not found
+      if (data) {
+        console.log('✅ 1차 매칭 성공 (정확한 매칭)');
+        return this.convertUserToSharedType(data);
+      }
+
+      console.log('⚠️ 1차 매칭 실패, 2차 시도 (대소문자 무시)');
+      
+      // 2차: 대소문자 무시 매칭  
+      ({ data, error } = await supabase
+        .from('users')
+        .select('*')
+        .ilike('nickname', nickname)
+        .single());
+
+      if (data) {
+        console.log('✅ 2차 매칭 성공 (대소문자 무시)');
+        return this.convertUserToSharedType(data);
+      }
+
+      console.log('⚠️ 2차 매칭 실패, 3차 시도 (트림 후 매칭)');
+
+      // 3차: 트림 후 매칭
+      const trimmedNickname = nickname.trim();
+      if (trimmedNickname !== nickname) {
+        ({ data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('nickname', trimmedNickname)
+          .single());
+
+        if (data) {
+          console.log('✅ 3차 매칭 성공 (트림 후 매칭)');
+          return this.convertUserToSharedType(data);
+        }
+      }
+
+      console.log('⚠️ 3차 매칭 실패, 4차 시도 (정규화 후 매칭)');
+
+      // 4차: 유니코드 정규화 후 매칭
+      const normalizedNickname = nickname.normalize('NFC');
+      if (normalizedNickname !== nickname) {
+        ({ data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('nickname', normalizedNickname)
+          .single());
+
+        if (data) {
+          console.log('✅ 4차 매칭 성공 (정규화 후 매칭)');
+          return this.convertUserToSharedType(data);
+        }
+      }
+
+      console.log('⚠️ 4차 매칭 실패, 5차 시도 (퍼지 매칭)');
+
+      // 5차: 퍼지 매칭 (부분 문자열)
+      ({ data, error } = await supabase
+        .from('users')
+        .select('*')
+        .like('nickname', `%${nickname}%`)
+        .single());
+
+      if (data) {
+        console.log('✅ 5차 매칭 성공 (퍼지 매칭)');
+        return this.convertUserToSharedType(data);
+      }
+
+      console.log('❌ 모든 매칭 시도 실패');
+
+      if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
-      return this.convertUserToSharedType(data);
+      return null;
     } catch (error) {
       console.error('닉네임으로 사용자 조회 실패:', error);
       return null; // 오류시 null 반환

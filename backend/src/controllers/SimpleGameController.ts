@@ -32,21 +32,37 @@ export class SimpleGameController {
   async getUser(req: Request, res: Response) {
     try {
       const { userId } = req.params;
+      const decodedUserId = decodeURIComponent(userId);
+      
+      // 🔍 디버깅 로그 추가
+      console.log('🔍 사용자 조회 요청:', {
+        original: userId,
+        decoded: decodedUserId,
+        originalLength: userId.length,
+        decodedLength: decodedUserId.length,
+        originalBytes: Buffer.from(userId).toString('hex'),
+        decodedBytes: Buffer.from(decodedUserId).toString('hex')
+      });
       
       // UUID 형식인지 확인 (간단한 방법)
       const isUUID = userId.length === 36 && userId.includes('-');
       
       let user;
       if (isUUID) {
+        console.log('🔑 UUID 기반 조회 시도:', userId);
         user = await this.gameService.getUserById(userId);
       } else {
         // 닉네임으로 조회
-        user = await this.gameService.getUserByNickname(decodeURIComponent(userId));
+        console.log('👤 닉네임 기반 조회 시도:', decodedUserId);
+        user = await this.gameService.getUserByNickname(decodedUserId);
       }
       
       if (!user) {
+        console.log('❌ 사용자 조회 실패 - 404 반환');
         return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
       }
+      
+      console.log('✅ 사용자 조회 성공:', user.nickname);
       
       res.json(user);
     } catch (error) {
