@@ -256,7 +256,7 @@ export default function GameDashboard({
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
       {/* 축하 효과 */}
       {showConfetti && (
         <Confetti
@@ -268,10 +268,12 @@ export default function GameDashboard({
         />
       )}
 
-      {/* 상단 사용자 정보 */}
-      <UserProfile 
-        user={user}
-      />
+      {/* 상단 사용자 정보 - 문제 풀이 모드에서는 간소화 */}
+      <div className={gameMode === 'problem' ? 'hidden md:block' : ''}>
+        <UserProfile 
+          user={user}
+        />
+      </div>
 
       {/* 메인 게임 영역 */}
       <AnimatePresence mode="wait">
@@ -341,13 +343,14 @@ export default function GameDashboard({
         onClose={() => setShowBadgeCase(false)}
       />
 
-      {/* Phase 2: 동기부여 시스템 영역 */}
-      <motion.div 
-        className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
-      >
+      {/* Phase 2: 동기부여 시스템 영역 - 문제 풀이 모드가 아닐 때만 표시 */}
+      {gameMode === 'map' && (
+        <motion.div 
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
         {/* 스트릭 디스플레이 */}
         <StreakDisplay 
           user={user} 
@@ -381,15 +384,17 @@ export default function GameDashboard({
             </PokemonButton>
           </div>
         </div>
-      </motion.div>
+        </motion.div>
+      )}
 
-      {/* 하단 통계 정보 */}
-      <motion.div 
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
-      >
+      {/* 하단 통계 정보 - 문제 풀이 모드가 아닐 때만 표시 */}
+      {gameMode === 'map' && (
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+        >
 
         {/* 포켓몬 수집 현황 */}
         <PokemonCard size="sm" className="text-center">
@@ -423,7 +428,8 @@ export default function GameDashboard({
             {user.completedTables.length === 8 ? '🏆 모든 구구단 완료!' : '💪 계속 도전하세요!'}
           </div>
         </PokemonCard>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* PRD [F-1.6]: 배지 획득 축하 애니메이션 */}
       <BadgeUnlockAnimation

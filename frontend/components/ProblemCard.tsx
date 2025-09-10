@@ -183,14 +183,16 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-lg">
-      {/* 포켓몬 이미지 카드 */}
-      <div className="flex justify-center mb-6">
-        <PokemonImageCard pokemon={pokemon} />
+    <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg">
+      {/* 포켓몬 이미지 카드 - 모바일에서 크기 축소 */}
+      <div className="flex justify-center mb-4 md:mb-6">
+        <div className="transform scale-75 md:scale-100">
+          <PokemonImageCard pokemon={pokemon} />
+        </div>
       </div>
 
       {/* 문제 */}
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <h4 className="text-lg font-semibold text-gray-800 mb-3">문제</h4>
         <p className="text-gray-700 leading-relaxed mb-4">{problem.story}</p>
         
