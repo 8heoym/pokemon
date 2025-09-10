@@ -171,14 +171,14 @@ export default function GameDashboard({
     setSelectedStage(null);
   };
 
-  // 컴포넌트 마운트 시 초기화
+  // 컴포넌트 마운트 시 초기화 (user ID 변경시에만)
   useEffect(() => {
     // 모험 지도 모드로 시작
     setGameMode('map');
     setSelectedStage(null);
     // 별의모래 애니메이션 초기화
     setRecentStarDust(0);
-  }, [user]);
+  }, [user.id]);
 
   // 🚀 메모리 누수 방지: 컴포넌트 언마운트 시 타이머 정리
   useEffect(() => {
