@@ -52,6 +52,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
   const [showHintBubble, setShowHintBubble] = useState(false);
   const [autoNextTimer, setAutoNextTimer] = useState(0);
   const [showAutoNextOptions, setShowAutoNextOptions] = useState(false);
+  const [autoProgressEnabled, setAutoProgressEnabled] = useState(false); // 자동 진행 비활성화
   
   // PRD [F-3.2]: 동적 피드백 시스템
   const {
@@ -72,9 +73,9 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     }
   }, [problem, triggerProblemStart]);
 
-  // 자동 진행 타이머 (정답 후 5초 대기)
+  // 자동 진행 타이머 (정답 후 5초 대기) - 사용자가 활성화한 경우에만
   useEffect(() => {
-    if (showAutoNextOptions && feedback.type === 'correct') {
+    if (autoProgressEnabled && showAutoNextOptions && feedback.type === 'correct') {
       setAutoNextTimer(5);
       
       const countdown = setInterval(() => {
@@ -91,12 +92,19 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
 
       return () => clearInterval(countdown);
     }
-  }, [showAutoNextOptions, feedback.type, onNextProblem]);
+  }, [autoProgressEnabled, showAutoNextOptions, feedback.type, onNextProblem]);
+
+  // 자동 진행 활성화 시 즉시 타이머 시작
+  useEffect(() => {
+    if (autoProgressEnabled && showAutoNextOptions && feedback.type === 'correct' && autoNextTimer === 0) {
+      setAutoNextTimer(5);
+    }
+  }, [autoProgressEnabled, showAutoNextOptions, feedback.type, autoNextTimer]);
 
   // 타이머 취소 함수
   const cancelAutoNext = () => {
     setAutoNextTimer(0);
-    setShowAutoNextOptions(false);
+    setAutoProgressEnabled(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,8 +129,9 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
           // 정답인 경우에만 답변 초기화
           setUserAnswer('');
           
-          // 자동 진행 옵션 표시
+          // 자동 진행 옵션 표시 (체크박스 상태 초기화)
           setShowAutoNextOptions(true);
+          setAutoProgressEnabled(false); // 기본값으로 비활성화
         } else {
           // PRD [F-3.2]: 오답 시 파트너 포켓몬 아쉬움 표현
           triggerIncorrectAnswer();
@@ -265,12 +274,25 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="text-green-800 font-medium mb-3 flex items-center justify-between">
                   <span>🎉 정답입니다! 다음은 어떻게 하시겠어요?</span>
-                  {autoNextTimer > 0 && (
+                  {autoProgressEnabled && autoNextTimer > 0 && (
                     <div className="flex items-center text-sm bg-green-100 px-2 py-1 rounded">
                       <span className="mr-1">⏱️</span>
                       <span>{autoNextTimer}초 후 자동 진행</span>
                     </div>
                   )}
+                </div>
+                
+                {/* 자동 진행 설정 */}
+                <div className="mb-3 flex items-center text-sm">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoProgressEnabled}
+                      onChange={(e) => setAutoProgressEnabled(e.target.checked)}
+                      className="mr-2"
+                    />
+                    <span className="text-gray-600">5초 후 자동으로 다음 문제로 진행</span>
+                  </label>
                 </div>
                 <div className="flex gap-3">
                   <button
@@ -282,7 +304,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                   >
                     <span className="mr-2">⚡</span>
                     같은 스테이지 계속하기
-                    {autoNextTimer > 0 && (
+                    {autoProgressEnabled && autoNextTimer > 0 && (
                       <span className="ml-2 text-xs bg-green-400 px-2 py-1 rounded">
                         {autoNextTimer}
                       </span>
@@ -299,7 +321,7 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
                     모험 지도로 돌아가기
                   </button>
                 </div>
-                {autoNextTimer > 0 && (
+                {autoProgressEnabled && autoNextTimer > 0 && (
                   <button
                     onClick={cancelAutoNext}
                     className="w-full mt-2 text-sm text-green-600 hover:text-green-800 underline"
