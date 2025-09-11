@@ -273,8 +273,31 @@ export class HybridProblemService {
         } as any;
       }
 
-      // 2. 정답 확인
-      const isCorrect = userAnswer === problemInstance.answer;
+      // 2. 정답 확인 (개선된 검증 로직)
+      const normalizedUserAnswer = this.normalizeAnswer(userAnswer);
+      const normalizedCorrectAnswer = this.normalizeAnswer(problemInstance.answer);
+      const isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
+
+      // 답안 검증 상세 로그
+      console.log('🔍 답안 검증 상세 로그:', {
+        problemId,
+        userId,
+        equation: problemInstance.equation,
+        userAnswer: {
+          original: userAnswer,
+          normalized: normalizedUserAnswer,
+          type: typeof userAnswer
+        },
+        correctAnswer: {
+          original: problemInstance.answer,
+          normalized: normalizedCorrectAnswer,
+          type: typeof problemInstance.answer
+        },
+        isCorrect,
+        timeSpent,
+        hintsUsed,
+        timestamp: new Date().toISOString()
+      });
 
       // 🚀 성능 최적화: 답안 기록과 세션 완료 처리 병렬 실행
       await Promise.all([
@@ -291,9 +314,10 @@ export class HybridProblemService {
         experienceGained = GameCalculations.calculateProblemExperience(problemInstance.difficulty, timeSpent);
       }
 
+      // 개선된 피드백 메시지 (입력값과 정답을 명확히 표시)
       const feedback = isCorrect ? 
         '정답입니다! 🎉' : 
-        `아쉽지만 틀렸습니다. 정답은 ${problemInstance.answer}입니다.`;
+        `아쉽지만 틀렸습니다. 입력하신 답: ${normalizedUserAnswer}, 정답: ${normalizedCorrectAnswer}`;
 
       return {
         isCorrect,
@@ -307,6 +331,29 @@ export class HybridProblemService {
       console.error('답안 제출 처리 실패:', error);
       throw error;
     }
+  }
+
+  /**
+   * 답안 정규화 함수 - 타입 안전성 보장 및 입력값 정리
+   */
+  private normalizeAnswer(answer: any): number {
+    if (answer === null || answer === undefined) {
+      return 0;
+    }
+    
+    if (typeof answer === 'string') {
+      const trimmed = answer.trim();
+      const parsed = parseInt(trimmed, 10);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    
+    if (typeof answer === 'number') {
+      return Math.floor(answer); // 소수점 제거
+    }
+    
+    // 기타 타입은 숫자로 변환 시도
+    const converted = Number(answer);
+    return isNaN(converted) ? 0 : Math.floor(converted);
   }
 
   private async recordAnswer(
