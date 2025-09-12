@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, MathProblem, Pokemon } from '@/types';
 import { MULTIPLICATION_ORDER, calculateLevel, getLevelProgress } from '@/utils/gameUtils';
@@ -60,16 +60,16 @@ export default function GameDashboard({
   const { generateProblem, submitAnswer } = useProblems();
   const { getUser } = useUsers();
 
-  // 🚀 최적화된 사용자 정보 새로고침
-  const refreshUserData = async () => {
+  // 🚀 최적화: 콜백 메모화로 불필요한 리렌더링 방지
+  const refreshUserData = useCallback(async () => {
     const userData = await getUser(user.id);
     if (userData) {
       onUserUpdate(userData);
     }
-  };
+  }, [user.id, getUser, onUserUpdate]);
 
-  // 🚀 스테이지 선택 시 문제 생성
-  const handleStageSelect = async (regionId: number, stageNumber: number) => {
+  // 🚀 최적화: 콜백 메모화로 불필요한 리렌더링 방지
+  const handleStageSelect = useCallback(async (regionId: number, stageNumber: number) => {
     setSelectedStage({ regionId, stageNumber });
     setIsLoadingProblem(true);
     
@@ -85,7 +85,7 @@ export default function GameDashboard({
     }
     
     setIsLoadingProblem(false);
-  };
+  }, [user.id, generateProblem]);
 
   // 🚀 최적화된 답안 제출 처리 + Phase 2 동기부여 시스템
   const handleAnswerSubmit = async (userAnswer: number, timeSpent: number, hintsUsed: number) => {
@@ -115,22 +115,23 @@ export default function GameDashboard({
         );
         setRecentStarDust(starDustEarned);
         
-        // 스트릭 업데이트 API 호출
+        // 🚀 최적화: API 호출을 배치로 통합하여 성능 향상
         try {
-          await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/users/${user.id}/streak`, {
-            method: 'POST'
-          });
-          
-          // 별의모래 지급 API 호출
-          await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/users/${user.id}/stardust`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              amount: starDustEarned,
-              source: 'problem_correct',
-              description: `문제 정답 (${hintsUsed === 0 ? '첫 시도 성공' : '정답'})`
+          // 두 API 호출을 병렬로 실행
+          await Promise.all([
+            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/users/${user.id}/streak`, {
+              method: 'POST'
+            }),
+            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api/users/${user.id}/stardust`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                amount: starDustEarned,
+                source: 'problem_correct',
+                description: `문제 정답 (${hintsUsed === 0 ? '첫 시도 성공' : '정답'})`
+              })
             })
-          });
+          ]);
         } catch (error) {
           console.error('Motivation system update failed:', error);
         }
@@ -156,20 +157,20 @@ export default function GameDashboard({
     return null;
   };
 
-  // 다음 문제로 이동
-  const handleNextProblem = () => {
+  // 🚀 최적화: 콜백 메모화
+  const handleNextProblem = useCallback(() => {
     if (selectedStage) {
       handleStageSelect(selectedStage.regionId, selectedStage.stageNumber);
     }
-  };
+  }, [selectedStage, handleStageSelect]);
 
-  // 모험 지도로 돌아가기
-  const handleBackToMap = () => {
+  // 🚀 최적화: 콜백 메모화
+  const handleBackToMap = useCallback(() => {
     setGameMode('map');
     setCurrentProblem(null);
     setCurrentPokemon(null);
     setSelectedStage(null);
-  };
+  }, []);
 
   // 컴포넌트 마운트 시 초기화 (user ID 변경시에만)
   useEffect(() => {

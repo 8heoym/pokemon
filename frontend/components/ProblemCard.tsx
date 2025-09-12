@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import PokemonImageCard from './PokemonImageCard';
 import StarDustAnimation from './animations/StarDustAnimation';
 import PokemonReaction from './animations/PokemonReaction';
@@ -32,7 +32,7 @@ interface ProblemCardProps {
   stageInfo?: {regionId: number; stageNumber: number};
 }
 
-const ProblemCard: React.FC<ProblemCardProps> = ({
+const ProblemCard: React.FC<ProblemCardProps> = React.memo(({
   problem,
   pokemon,
   user,
@@ -73,26 +73,31 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     }
   }, [problem, triggerProblemStart]);
 
+  // 🚀 최적화: 자동 진행 타이머 메모화
+  const startAutoTimer = useCallback(() => {
+    setAutoNextTimer(5);
+    
+    const countdown = setInterval(() => {
+      setAutoNextTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(countdown);
+          onNextProblem();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return countdown;
+  }, [onNextProblem]);
+
   // 자동 진행 타이머 (정답 후 5초 대기) - 사용자가 활성화한 경우에만
   useEffect(() => {
     if (autoProgressEnabled && showAutoNextOptions && feedback.type === 'correct') {
-      setAutoNextTimer(5);
-      
-      const countdown = setInterval(() => {
-        setAutoNextTimer(prev => {
-          if (prev <= 1) {
-            clearInterval(countdown);
-            // 자동으로 다음 문제로 진행
-            onNextProblem();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
+      const countdown = startAutoTimer();
       return () => clearInterval(countdown);
     }
-  }, [autoProgressEnabled, showAutoNextOptions, feedback.type, onNextProblem]);
+  }, [autoProgressEnabled, showAutoNextOptions, feedback.type, startAutoTimer]);
 
   // 자동 진행 활성화 시 즉시 타이머 시작
   useEffect(() => {
@@ -101,13 +106,14 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
     }
   }, [autoProgressEnabled, showAutoNextOptions, feedback.type, autoNextTimer]);
 
-  // 타이머 취소 함수
-  const cancelAutoNext = () => {
+  // 🚀 최적화: 타이머 취소 함수 메모화
+  const cancelAutoNext = useCallback(() => {
     setAutoNextTimer(0);
     setAutoProgressEnabled(false);
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // 🚀 최적화: 제출 핸들러 메모화
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (userAnswer.trim() && !isSubmitting) {
       setIsSubmitting(true);
@@ -152,18 +158,19 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
         setIsSubmitting(false);
       }
     }
-  };
+  }, [userAnswer, isSubmitting, startTime, hintsUsed, onAnswerSubmit, triggerCorrectAnswer, triggerIncorrectAnswer]);
 
-  const handleHint = () => {
+  // 🚀 최적화: 힌트 핸들러 메모화
+  const handleHint = useCallback(() => {
     setHintsUsed(prev => prev + 1);
     // PRD [F-3.3]: 힌트 요청 시 도우미 포켓몬 등장
     triggerHintRequest();
     setShowHintBubble(true);
-  };
+  }, [triggerHintRequest]);
 
-  const handleCloseHint = () => {
+  const handleCloseHint = useCallback(() => {
     setShowHintBubble(false);
-  };
+  }, []);
 
   if (isSubmitting) {
     return (
@@ -381,6 +388,9 @@ const ProblemCard: React.FC<ProblemCardProps> = ({
       />
     </div>
   );
-};
+});
+
+// 🚀 최적화: React.memo를 사용한 불필요한 리렌더링 방지
+ProblemCard.displayName = 'ProblemCard';
 
 export default ProblemCard;

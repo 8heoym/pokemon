@@ -74,13 +74,14 @@ export const useBadgeSystem = () => {
   const [pendingBadgeUnlock, setPendingBadgeUnlock] = useState<BadgeUnlock | null>(null);
   const previousCompletedTablesRef = useRef<number[]>([]);
 
-  // PRD [F-1.6]: 지역 완료 감지 및 배지 획득 트리거
+  // PRD [F-1.6]: 지역 완료 감지 및 배지 획득 트리거 (최적화)
   const checkForNewBadges = useCallback((user: User) => {
     if (!user.completedTables) return;
 
     const currentCompleted = user.completedTables;
     const previousCompleted = previousCompletedTablesRef.current;
     
+    // 🚀 최적화: 새로 완료된 테이블만 계산
     const newlyCompleted = currentCompleted.filter(
       table => !previousCompleted.includes(table)
     );
@@ -97,7 +98,7 @@ export const useBadgeSystem = () => {
     }
 
     previousCompletedTablesRef.current = [...currentCompleted];
-  }, []); // 의존성 배열을 빈 배열로 변경하여 함수 재생성 방지
+  }, []); // 의존성을 빈 배열로 유지하여 함수 재생성 방지
 
   // 초기화 시 현재 완료된 테이블 설정
   const initializeBadgeSystem = useCallback((user: User) => {
