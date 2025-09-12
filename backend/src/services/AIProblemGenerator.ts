@@ -24,7 +24,61 @@ export class AIProblemGenerator {
     userAnalysis?: LearningAnalysis
   ): Promise<MathProblem> {
     try {
-      // Mock problem generation for now - will implement AI later
+      // AI 키가 있으면 실제 AI 사용, 없으면 Mock 사용
+      if (this.anthropic) {
+        const prompt = this.createProblemPrompt(pokemon, multiplicationTable, difficulty, userAnalysis);
+        
+        // 🚀 개선: Claude-3 모델로 업그레이드 (기존 SDK 호환)
+        const completion = await this.anthropic.completions.create({
+          model: 'claude-3-haiku-20240307',
+          prompt: `\n\nHuman: ${prompt}\n\nAssistant:`,
+          max_tokens_to_sample: 1000
+        });
+
+        const responseText = completion.completion;
+        const problemData = this.parseProblemResponse(responseText);
+        
+        console.log('AI 문제 생성 완료:', problemData.story.substring(0, 50) + '...');
+        
+        return {
+          id: uuidv4(),
+          ...problemData,
+          multiplicationTable,
+          pokemonId: pokemon.id,
+          difficulty
+        };
+      } else {
+        // Fallback to mock generation
+        console.log('AI API 키 없음 - Mock 모드 사용');
+        const factors = [2, 3, 4, 5, 6, 7, 8, 9];
+        const randomFactor = factors[Math.floor(Math.random() * factors.length)];
+        const answer = multiplicationTable * randomFactor;
+        
+        const problemData = {
+          story: `${pokemon.koreanName}가 ${multiplicationTable}마리씩 ${randomFactor}그룹에 있습니다. 모두 몇 마리일까요?`,
+          hint: `${multiplicationTable} × ${randomFactor}을 계산해보세요!`,
+          equation: `${multiplicationTable} × ${randomFactor}`,
+          answer: answer,
+          visualElements: {
+            pokemonCount: multiplicationTable,
+            itemsPerPokemon: randomFactor,
+            totalItems: answer
+          }
+        };
+        
+        return {
+          id: uuidv4(),
+          ...problemData,
+          multiplicationTable,
+          pokemonId: pokemon.id,
+          difficulty
+        };
+      }
+      
+    } catch (error) {
+      console.error('문제 생성 실패:', error);
+      // AI 실패 시 Mock으로 폴백
+      console.log('AI 실패 - Mock 모드로 폴백');
       const factors = [2, 3, 4, 5, 6, 7, 8, 9];
       const randomFactor = factors[Math.floor(Math.random() * factors.length)];
       const answer = multiplicationTable * randomFactor;
@@ -48,10 +102,6 @@ export class AIProblemGenerator {
         pokemonId: pokemon.id,
         difficulty
       };
-      
-    } catch (error) {
-      console.error('문제 생성 실패:', error);
-      throw error;
     }
   }
 
@@ -162,13 +212,29 @@ JSON 형태로만 응답해주세요.`;
 응답은 "오류유형: 설명" 형식으로 50자 이내로 해주세요.
       `;
 
-      // Mock analysis for now - will implement AI later
-      const errorTypes = ['계산 실수: 단순한 계산 오류', '개념적 오류: 곱셈 이해 부족', '기억 오류: 구구단 실수'];
-      return errorTypes[Math.floor(Math.random() * errorTypes.length)];
+      // AI 키가 있으면 실제 AI 사용, 없으면 Mock 사용
+      if (this.anthropic) {
+        const completion = await this.anthropic.completions.create({
+          model: 'claude-3-haiku-20240307',
+          prompt: `\n\nHuman: ${prompt}\n\nAssistant:`,
+          max_tokens_to_sample: 100
+        });
+
+        const responseText = completion.completion;
+        console.log('AI 오답 분석 완료:', responseText.trim());
+        return responseText.trim();
+      } else {
+        // Fallback to mock analysis
+        console.log('AI API 키 없음 - Mock 오답 분석 사용');
+        const errorTypes = ['계산 실수: 단순한 계산 오류', '개념적 오류: 곱셈 이해 부족', '기억 오류: 구구단 실수'];
+        return errorTypes[Math.floor(Math.random() * errorTypes.length)];
+      }
       
     } catch (error) {
       console.error('오답 분석 실패:', error);
-      return '오류유형: 분석 불가능';
+      // AI 실패 시 Mock으로 폴백
+      const errorTypes = ['계산 실수: 단순한 계산 오류', '개념적 오류: 곱셈 이해 부족', '기억 오류: 구구단 실수'];
+      return errorTypes[Math.floor(Math.random() * errorTypes.length)];
     }
   }
 
@@ -188,7 +254,33 @@ JSON 형태로만 응답해주세요.`;
 시각적 설명이나 단계별 설명을 포함하세요.
       `;
 
-      // Mock hint generation for now - will implement AI later
+      // AI 키가 있으면 실제 AI 사용, 없으면 Mock 사용
+      if (this.anthropic) {
+        const completion = await this.anthropic.completions.create({
+          model: 'claude-3-haiku-20240307',
+          prompt: `\n\nHuman: ${prompt}\n\nAssistant:`,
+          max_tokens_to_sample: 100
+        });
+
+        const responseText = completion.completion;
+        const generatedHint = responseText.trim();
+        console.log('AI 힌트 생성 완료:', generatedHint);
+        return generatedHint || problem.hint;
+      } else {
+        // Fallback to mock hint generation
+        console.log('AI API 키 없음 - Mock 힌트 생성 사용');
+        const hints = [
+          '손가락으로 세어보세요!',
+          '더 작은 숫자부터 시작해보세요.',
+          '그림을 그려서 생각해보세요!',
+          '덧셈으로 바꿔서 계산해보세요.'
+        ];
+        return hints[Math.floor(Math.random() * hints.length)];
+      }
+      
+    } catch (error) {
+      console.error('힌트 생성 실패:', error);
+      // AI 실패 시 Mock으로 폴백
       const hints = [
         '손가락으로 세어보세요!',
         '더 작은 숫자부터 시작해보세요.',
@@ -196,10 +288,6 @@ JSON 형태로만 응답해주세요.`;
         '덧셈으로 바꿔서 계산해보세요.'
       ];
       return hints[Math.floor(Math.random() * hints.length)];
-      
-    } catch (error) {
-      console.error('힌트 생성 실패:', error);
-      return problem.hint; // 기존 힌트 반환
     }
   }
 }

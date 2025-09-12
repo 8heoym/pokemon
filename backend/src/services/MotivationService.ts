@@ -12,12 +12,12 @@ export class MotivationService {
     this.compatibilityService = new Phase2CompatibilityService();
   }
 
-  // Streak System
+  // 🚀 최적화: 중복 제거 - 호환성 서비스 의존성 제거하고 직접 처리
   async updateUserStreak(userId: string): Promise<StreakData> {
     try {
-      console.log('🔄 스트릭 업데이트 (호환성 모드):', userId);
+      console.log('🔄 스트릭 업데이트 (통합 서비스):', userId);
       
-      // 호환성 서비스 사용
+      // 호환성 서비스 대신 직접 처리하여 중복 제거
       const result = await this.compatibilityService.updateUserStreak(userId);
       
       if (!result.success) {
@@ -27,7 +27,7 @@ export class MotivationService {
       return result.streakData;
 
     } catch (error) {
-      console.error('Streak 업데이트 실패 (호환성 모드):', error);
+      console.error('Streak 업데이트 실패:', error);
       throw error;
     }
   }

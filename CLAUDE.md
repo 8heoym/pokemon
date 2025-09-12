@@ -162,8 +162,10 @@ For development debugging:
 ### Development Best Practices
 - Run lint and typecheck commands (npm run lint, npm run typecheck, ruff, etc.) after completing tasks to ensure code is correct.
 - NEVER commit changes unless the user explicitly asks you to.
+- Never change the deployment environment.
+- Don't deploy via GitHub Actions.
+
 
 ## TheGoldenRule
 - When unsure about implementation details, ALWAYS ask the developer.
 - 불필요한 리포트, 피드백 시스템을 만드는 것을 지양합니다.
-- 

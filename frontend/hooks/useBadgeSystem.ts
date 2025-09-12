@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { User } from '@/types';
 
 interface BadgeUnlock {
@@ -72,15 +72,17 @@ const REGION_BADGES = {
 
 export const useBadgeSystem = () => {
   const [pendingBadgeUnlock, setPendingBadgeUnlock] = useState<BadgeUnlock | null>(null);
-  const [previousCompletedTables, setPreviousCompletedTables] = useState<number[]>([]);
+  const previousCompletedTablesRef = useRef<number[]>([]);
 
   // PRD [F-1.6]: 지역 완료 감지 및 배지 획득 트리거
   const checkForNewBadges = useCallback((user: User) => {
     if (!user.completedTables) return;
 
     const currentCompleted = user.completedTables;
+    const previousCompleted = previousCompletedTablesRef.current;
+    
     const newlyCompleted = currentCompleted.filter(
-      table => !previousCompletedTables.includes(table)
+      table => !previousCompleted.includes(table)
     );
 
     // 새로 완료된 구구단이 있는지 확인
@@ -94,15 +96,15 @@ export const useBadgeSystem = () => {
       }
     }
 
-    setPreviousCompletedTables([...currentCompleted]);
-  }, [previousCompletedTables]);
+    previousCompletedTablesRef.current = [...currentCompleted];
+  }, []); // 의존성 배열을 빈 배열로 변경하여 함수 재생성 방지
 
   // 초기화 시 현재 완료된 테이블 설정
   const initializeBadgeSystem = useCallback((user: User) => {
-    if (user.completedTables && previousCompletedTables.length === 0) {
-      setPreviousCompletedTables([...user.completedTables]);
+    if (user.completedTables && previousCompletedTablesRef.current.length === 0) {
+      previousCompletedTablesRef.current = [...user.completedTables];
     }
-  }, [previousCompletedTables]);
+  }, []); // 의존성 배열을 빈 배열로 변경하여 함수 재생성 방지
 
   // 배지 획득 애니메이션 완료
   const handleBadgeUnlockComplete = useCallback(() => {

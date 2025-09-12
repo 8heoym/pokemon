@@ -321,7 +321,7 @@ app.delete('/api/session/user/:userId', (req, res) => sessionController.clearUse
 app.delete('/api/session/all', (req, res) => sessionController.clearAllSessions(req, res));
 app.get('/api/session/test', (req, res) => sessionController.performanceTest(req, res));
 
-// Phase 2: Motivation System API 라우트
+// Phase 2: Motivation System API 라우트 (통합된 컨트롤러 사용)
 app.post('/api/users/:userId/streak', (req, res) => motivationController.updateStreak(req, res));
 app.post('/api/users/:userId/daily-bonus', (req, res) => motivationController.claimDailyBonus(req, res));
 app.post('/api/users/:userId/stardust', (req, res) => motivationController.awardStarDust(req, res));
@@ -369,14 +369,36 @@ app.post('/api/schema-fix/add-columns', (req, res) => schemaFixController.addCol
 app.post('/api/schema-fix/workaround', (req, res) => schemaFixController.createWorkaround(req, res));
 app.post('/api/schema-fix/comprehensive', (req, res) => schemaFixController.fixSchemaComprehensive(req, res));
 
-// Compatibility Mode API 라우트 (스키마 변경 없이 Phase 2 기능)
-app.post('/api/compat/users/:userId/streak', (req, res) => compatibilityController.updateStreak(req, res));
-app.post('/api/compat/users/:userId/daily-bonus', (req, res) => compatibilityController.claimDailyBonus(req, res));
-app.post('/api/compat/users/:userId/stardust', (req, res) => compatibilityController.awardStarDust(req, res));
-app.get('/api/compat/users/:userId/shop', (req, res) => compatibilityController.getShopItems(req, res));
-app.post('/api/compat/users/:userId/purchase', (req, res) => compatibilityController.purchaseItem(req, res));
-app.post('/api/compat/users/:userId/badge', (req, res) => compatibilityController.awardBadge(req, res));
-app.get('/api/compat/users/:userId/motivation-stats', (req, res) => compatibilityController.getMotivationStats(req, res));
+// 🚀 최적화: Compatibility Mode API를 기존 API로 리다이렉트 (중복 제거)
+app.post('/api/compat/users/:userId/streak', (req, res) => {
+  // 호환성 유지를 위해 기존 API로 내부 리다이렉트
+  req.url = req.url.replace('/api/compat/', '/api/');
+  return motivationController.updateStreak(req, res);
+});
+app.post('/api/compat/users/:userId/daily-bonus', (req, res) => {
+  req.url = req.url.replace('/api/compat/', '/api/');
+  return motivationController.claimDailyBonus(req, res);
+});
+app.post('/api/compat/users/:userId/stardust', (req, res) => {
+  req.url = req.url.replace('/api/compat/', '/api/');
+  return motivationController.awardStarDust(req, res);
+});
+app.get('/api/compat/users/:userId/shop', (req, res) => {
+  req.url = req.url.replace('/api/compat/', '/api/');
+  return motivationController.getShopItems(req, res);
+});
+app.post('/api/compat/users/:userId/purchase', (req, res) => {
+  req.url = req.url.replace('/api/compat/', '/api/');
+  return motivationController.purchaseItem(req, res);
+});
+app.post('/api/compat/users/:userId/badge', (req, res) => {
+  req.url = req.url.replace('/api/compat/', '/api/');
+  return motivationController.awardBadge(req, res);
+});
+app.get('/api/compat/users/:userId/motivation-stats', (req, res) => {
+  req.url = req.url.replace('/api/compat/', '/api/');
+  return motivationController.getMotivationStats(req, res);
+});
 app.get('/api/compat/status', (req, res) => compatibilityController.getCompatibilityStatus(req, res));
 
 // 에러 핸들링

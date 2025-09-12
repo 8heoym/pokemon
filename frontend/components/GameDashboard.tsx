@@ -245,11 +245,15 @@ export default function GameDashboard({
     }
   }, [recentStarDust]);
 
-  // PRD [F-1.6]: 배지 시스템 초기화 및 새 배지 체크
+  // PRD [F-1.6]: 배지 시스템 초기화 (사용자 변경 시만)
   useEffect(() => {
     initializeBadgeSystem(user);
+  }, [user.id, initializeBadgeSystem]);
+
+  // PRD [F-1.6]: 새 배지 체크 (완료된 테이블 변경 시만)
+  useEffect(() => {
     checkForNewBadges(user);
-  }, [user.completedTables, initializeBadgeSystem, checkForNewBadges, user]);
+  }, [user.completedTables, checkForNewBadges]);
 
   if (isLoadingProblem) {
     return <LoadingScreen message="새로운 포켓몬 문제를 준비하는 중..." />;

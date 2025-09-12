@@ -66,100 +66,56 @@ export class SupabaseGameService {
     }
   }
 
+  // 🚀 최적화: 닉네임 조회를 단일 쿼리로 개선 (5단계 → 1단계)
   async getUserByNickname(nickname: string): Promise<User | null> {
     try {
-      console.log('🔍 강화된 닉네임 조회 시작:', {
-        nickname,
-        length: nickname.length,
-        bytes: Buffer.from(nickname).toString('hex'),
-        trimmed: nickname.trim(),
-        normalized: nickname.normalize('NFC')
-      });
+      console.log('🔍 최적화된 닉네임 조회:', nickname);
 
-      // 1차: 정확한 매칭
-      let { data, error } = await supabase
+      // 전처리: 닉네임 정규화
+      const variations = [
+        nickname,                         // 원본
+        nickname.trim(),                  // 공백 제거
+        nickname.normalize('NFC'),        // 유니코드 정규화
+        nickname.trim().normalize('NFC')  // 둘 다 적용
+      ];
+
+      // 중복 제거
+      const uniqueVariations = [...new Set(variations)];
+
+      // 단일 쿼리로 모든 변형 동시 검색 (OR 조건)
+      const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('nickname', nickname)
-        .single();
-
-      if (data) {
-        console.log('✅ 1차 매칭 성공 (정확한 매칭)');
-        return this.convertUserToSharedType(data);
-      }
-
-      console.log('⚠️ 1차 매칭 실패, 2차 시도 (대소문자 무시)');
-      
-      // 2차: 대소문자 무시 매칭  
-      ({ data, error } = await supabase
-        .from('users')
-        .select('*')
-        .ilike('nickname', nickname)
-        .single());
-
-      if (data) {
-        console.log('✅ 2차 매칭 성공 (대소문자 무시)');
-        return this.convertUserToSharedType(data);
-      }
-
-      console.log('⚠️ 2차 매칭 실패, 3차 시도 (트림 후 매칭)');
-
-      // 3차: 트림 후 매칭
-      const trimmedNickname = nickname.trim();
-      if (trimmedNickname !== nickname) {
-        ({ data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('nickname', trimmedNickname)
-          .single());
-
-        if (data) {
-          console.log('✅ 3차 매칭 성공 (트림 후 매칭)');
-          return this.convertUserToSharedType(data);
-        }
-      }
-
-      console.log('⚠️ 3차 매칭 실패, 4차 시도 (정규화 후 매칭)');
-
-      // 4차: 유니코드 정규화 후 매칭
-      const normalizedNickname = nickname.normalize('NFC');
-      if (normalizedNickname !== nickname) {
-        ({ data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('nickname', normalizedNickname)
-          .single());
-
-        if (data) {
-          console.log('✅ 4차 매칭 성공 (정규화 후 매칭)');
-          return this.convertUserToSharedType(data);
-        }
-      }
-
-      console.log('⚠️ 4차 매칭 실패, 5차 시도 (퍼지 매칭)');
-
-      // 5차: 퍼지 매칭 (부분 문자열)
-      ({ data, error } = await supabase
-        .from('users')
-        .select('*')
-        .like('nickname', `%${nickname}%`)
-        .single());
-
-      if (data) {
-        console.log('✅ 5차 매칭 성공 (퍼지 매칭)');
-        return this.convertUserToSharedType(data);
-      }
-
-      console.log('❌ 모든 매칭 시도 실패');
+        .or(uniqueVariations.map(v => `nickname.eq.${v}`).join(','))
+        .limit(1);
 
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
+      if (data && data.length > 0) {
+        console.log('✅ 최적화된 닉네임 매칭 성공');
+        return this.convertUserToSharedType(data[0]);
+      }
+
+      // 실패 시에만 대소문자 무시 검색 (fallback)
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('users')
+        .select('*')
+        .ilike('nickname', nickname)
+        .limit(1);
+
+      if (fallbackData && fallbackData.length > 0) {
+        console.log('✅ 대소문자 무시 매칭 성공 (fallback)');
+        return this.convertUserToSharedType(fallbackData[0]);
+      }
+
+      console.log('❌ 닉네임 매칭 실패');
       return null;
+
     } catch (error) {
       console.error('닉네임으로 사용자 조회 실패:', error);
-      return null; // 오류시 null 반환
+      return null;
     }
   }
 
