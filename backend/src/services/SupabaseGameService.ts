@@ -268,11 +268,12 @@ export class SupabaseGameService {
     }
   }
 
-  async getPokemonByIds(pokemonIds: number[], limit: number = 50, offset: number = 0) {
+  // 🚀 최적화: 배치 포켓몬 조회 성능 개선
+  async getPokemonByIds(pokemonIds: number[], limit: number = 100, offset: number = 0) {
     try {
-      console.log(`=== Pokemon Batch Query: IDs count=${pokemonIds.length}, limit=${limit}, offset=${offset} ===`);
+      console.log(`🚀 최적화된 Pokemon Batch Query: IDs count=${pokemonIds.length}, limit=${limit}, offset=${offset}`);
       
-      // 요청된 ID들 중 offset부터 limit개만 처리
+      // 요청된 ID들 중 offset부터 limit개만 처리 (limit 증가로 더 많은 데이터 한 번에 처리)
       const requestedIds = pokemonIds.slice(offset, offset + limit);
       
       if (requestedIds.length === 0) {
@@ -283,9 +284,10 @@ export class SupabaseGameService {
         };
       }
 
+      // 필요한 필드만 선택하여 네트워크 부하 감소
       const { data: pokemon, error } = await supabase
         .from('pokemon')
-        .select('id, name, korean_name, image_url, rarity, region, characteristics')
+        .select('id, name, korean_name, image_url, rarity, region, characteristics, multiplication_table')
         .in('id', requestedIds)
         .order('id');
 

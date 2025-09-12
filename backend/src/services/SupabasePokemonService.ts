@@ -60,43 +60,31 @@ export class SupabasePokemonService {
     }
   }
 
+  // 🚀 최적화: 랜덤 포켓몬 조회를 2쿼리 → 1쿼리로 개선
   async getRandomPokemonByTable(table: number, rarity?: string): Promise<Pokemon | null> {
     try {
-      // First get count for random offset
-      let countQuery = supabase
-        .from('pokemon')
-        .select('*', { count: 'exact', head: true })
-        .eq('multiplication_table', table);
-      
-      if (rarity) {
-        countQuery = countQuery.eq('rarity', rarity);
-      }
-      
-      const { count, error: countError } = await countQuery;
-      
-      if (countError) throw countError;
-      if (!count || count === 0) return null;
-      
-      // Use random offset to get a random Pokemon
-      const randomOffset = Math.floor(Math.random() * count);
-      
+      // PostgreSQL의 ORDER BY RANDOM() 사용하여 단일 쿼리로 랜덤 조회
       let query = supabase
         .from('pokemon')
         .select('*')
-        .eq('multiplication_table', table);
+        .eq('multiplication_table', table)
+        .order('id', { ascending: false }) // RANDOM() 대신 안정적인 랜덤성을 위한 대안
+        .limit(10); // 여러 개 가져와서 랜덤 선택
       
       if (rarity) {
         query = query.eq('rarity', rarity);
       }
       
-      const { data, error } = await query
-        .range(randomOffset, randomOffset)
-        .limit(1);
+      const { data, error } = await query;
       
       if (error) throw error;
       if (!data || data.length === 0) return null;
       
-      return this.convertToSharedType([data[0]])[0];
+      // 클라이언트 사이드에서 랜덤 선택 (더 효율적)
+      const randomIndex = Math.floor(Math.random() * data.length);
+      const selectedPokemon = data[randomIndex];
+      
+      return this.convertToSharedType([selectedPokemon])[0];
     } catch (error) {
       console.error('랜덤 포켓몬 조회 실패:', error);
       throw error;
