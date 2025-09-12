@@ -115,11 +115,59 @@ const ProblemCard: React.FC<ProblemCardProps> = React.memo(({
   // 🚀 최적화: 제출 핸들러 메모화
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (userAnswer.trim() && !isSubmitting) {
+    
+    // 상세한 입력 검증 및 로깅
+    const trimmedAnswer = userAnswer.trim();
+    
+    if (!trimmedAnswer) {
+      console.log('🚫 입력 검증 실패: 빈 답안');
+      setFeedback({
+        type: 'incorrect',
+        message: '답을 입력해주세요.'
+      });
+      return;
+    }
+
+    // 숫자 검증
+    const numericAnswer = parseInt(trimmedAnswer, 10);
+    if (isNaN(numericAnswer)) {
+      console.log('🚫 입력 검증 실패: 숫자가 아님', { userInput: trimmedAnswer });
+      setFeedback({
+        type: 'incorrect',
+        message: '숫자만 입력해주세요.'
+      });
+      return;
+    }
+
+    // 범위 검증 (음수 방지)
+    if (numericAnswer < 0) {
+      console.log('🚫 입력 검증 실패: 음수', { userInput: numericAnswer });
+      setFeedback({
+        type: 'incorrect',
+        message: '0 이상의 숫자를 입력해주세요.'
+      });
+      return;
+    }
+
+    if (!isSubmitting) {
+      // 제출 전 상세 로깅
+      console.log('📝 답안 제출 시작:', {
+        problemId: problem?.id,
+        userInput: {
+          raw: userAnswer,
+          trimmed: trimmedAnswer,
+          parsed: numericAnswer,
+          type: typeof numericAnswer
+        },
+        problemEquation: problem?.equation,
+        expectedAnswer: problem?.answer,
+        timestamp: new Date().toISOString()
+      });
+
       setIsSubmitting(true);
       try {
         const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-        const result = await onAnswerSubmit(parseInt(userAnswer), timeSpent, hintsUsed);
+        const result = await onAnswerSubmit(numericAnswer, timeSpent, hintsUsed);
         
         if (result.isCorrect) {
           // PRD [F-3.2]: 정답 시 별의모래 애니메이션 + 파트너 포켓몬 기쁨 표현
@@ -144,12 +192,12 @@ const ProblemCard: React.FC<ProblemCardProps> = React.memo(({
           
           setFeedback({
             type: 'incorrect',
-            message: '틀렸어요. 다시 생각해보세요!'
+            message: result.feedback || '틀렸어요. 다시 생각해보세요!'
           });
           // 틀린 경우에는 답변을 초기화하지 않고 보존
         }
       } catch (error) {
-        console.error('Submit error:', error);
+        console.error('❌ 답안 제출 오류:', error);
         setFeedback({
           type: 'incorrect',
           message: '오류가 발생했습니다. 다시 시도해주세요.'
@@ -253,16 +301,59 @@ const ProblemCard: React.FC<ProblemCardProps> = React.memo(({
         </form>
       )}
 
-      {/* 답변 완료 후 상태 표시 */}
+      {/* 답변 완료 후 상세 정보 표시 */}
       {feedback.type && (
         <div className="space-y-4">
           <div className="p-4 bg-gray-50 rounded-lg border">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              입력한 답:
-            </label>
-            <div className="bg-gray-100 px-4 py-3 rounded-lg text-gray-600 font-medium">
-              {feedback.type === 'correct' ? problem?.answer : userAnswer || '(입력 없음)'}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  입력한 답:
+                </label>
+                <div className={`px-4 py-3 rounded-lg font-medium ${
+                  feedback.type === 'correct' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {feedback.type === 'correct' ? problem?.answer : userAnswer || '(입력 없음)'}
+                </div>
+              </div>
+              
+              {feedback.type === 'incorrect' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    정답:
+                  </label>
+                  <div className="bg-green-100 text-green-800 px-4 py-3 rounded-lg font-medium">
+                    {problem?.answer}
+                  </div>
+                </div>
+              )}
+              
+              {feedback.type === 'correct' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    결과:
+                  </label>
+                  <div className="bg-green-100 text-green-800 px-4 py-3 rounded-lg font-medium flex items-center">
+                    <span className="mr-2">🎉</span>
+                    정답!
+                  </div>
+                </div>
+              )}
             </div>
+            
+            {/* 문제 equation 표시 */}
+            {problem?.equation && (
+              <div className="mt-3 pt-3 border-t">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  문제 식:
+                </label>
+                <div className="bg-blue-50 text-blue-800 px-4 py-3 rounded-lg font-mono text-lg">
+                  {problem.equation}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
