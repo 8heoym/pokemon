@@ -13,6 +13,7 @@ import { PokemonImageDownloader } from './utils/imageDownloader';
 import { TemplateSystemInitializer } from './utils/initializeTemplateSystem';
 import { SchemaFixController } from './controllers/SchemaFixController';
 import { CompatibilityMotivationController } from './controllers/CompatibilityMotivationController';
+import { StageMigrationController } from './controllers/StageMigrationController';
 
 // 환경변수 로드
 dotenv.config();
@@ -35,6 +36,7 @@ const schemaUpdater = new DatabaseSchemaUpdater();
 const templateInitializer = new TemplateSystemInitializer();
 const schemaFixController = new SchemaFixController();
 const compatibilityController = new CompatibilityMotivationController();
+const stageMigrationController = new StageMigrationController();
 
 // 기본 라우트
 app.get('/', (req, res) => {
@@ -395,6 +397,13 @@ app.post('/api/compat/users/:userId/badge', (req, res) => {
   req.url = req.url.replace('/api/compat/', '/api/');
   return motivationController.awardBadge(req, res);
 });
+// 스테이지 축소 관련 API
+app.get('/api/stages/config', (req, res) => stageMigrationController.getStageConfig(req, res));
+app.get('/api/stages/region/:regionId', (req, res) => stageMigrationController.getRegionStageInfo(req, res));
+app.post('/api/stages/migrate-simulation', (req, res) => stageMigrationController.simulateUserMigration(req, res));
+app.get('/api/stages/stats', (req, res) => stageMigrationController.getMigrationStats(req, res));
+
+// 호환성 API (Phase 2 대응)
 app.get('/api/compat/users/:userId/motivation-stats', (req, res) => {
   req.url = req.url.replace('/api/compat/', '/api/');
   return motivationController.getMotivationStats(req, res);

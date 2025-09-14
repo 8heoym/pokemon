@@ -1,16 +1,19 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { User } from '@/types';
 import { 
   ADVENTURE_REGIONS, 
   STAGE_NAME_TEMPLATES, 
+  REDUCED_STAGE_NAME_TEMPLATES,
   STAGE_STATUS, 
   STAGE_VISUAL_CONFIG,
   Stage,
   StageStatus
 } from '@/utils/adventureMapConstants';
+import { StageMigrationUtils } from '@/utils/stageMigration';
+import { useReducedStages } from '@/utils/featureFlags';
 
 interface AdventureMapProps {
   user: User;
@@ -23,13 +26,35 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
   onStageSelect,
   selectedStage
 }) => {
-  // PRD [F-1.4] 스테이지 기반 진행 시스템 구현
+  // Feature Flag 상태
+  const shouldUseReducedStages = useReducedStages();
+  const [showMigrationNotice, setShowMigrationNotice] = useState(false);
+
+  // 사용자 첫 방문시 마이그레이션 알림 표시 (한 번만)
+  useEffect(() => {
+    if (shouldUseReducedStages && !localStorage.getItem('migration_notice_shown')) {
+      setShowMigrationNotice(true);
+      localStorage.setItem('migration_notice_shown', 'true');
+    }
+  }, [shouldUseReducedStages]);
+
+  // PRD [F-1.4] 스테이지 축소 적용된 진행 시스템 구현
   const stageData = useMemo(() => {
     return ADVENTURE_REGIONS.map(region => {
       const isRegionUnlocked = user.completedTables.length >= Math.floor((region.id - 2) * 0.5);
-      const stageNames = STAGE_NAME_TEMPLATES[region.id] || [];
       
-      const stages: Stage[] = Array.from({ length: region.stages }, (_, index) => {
+      // 스테이지 축소 적용 여부 결정
+      const useReducedForThisRegion = shouldUseReducedStages && StageMigrationUtils.isRegionAffected(region.id);
+      const actualStageCount = useReducedForThisRegion 
+        ? StageMigrationUtils.getNewStageCount(region.id)
+        : region.stages;
+      
+      // 템플릿 선택: 축소된 템플릿 또는 기존 템플릿
+      const stageNames = useReducedForThisRegion
+        ? (REDUCED_STAGE_NAME_TEMPLATES[region.id] || STAGE_NAME_TEMPLATES[region.id] || [])
+        : (STAGE_NAME_TEMPLATES[region.id] || []);
+      
+      const stages: Stage[] = Array.from({ length: actualStageCount }, (_, index) => {
         const stageNumber = index + 1;
         const stageName = stageNames[index] || `${region.name} 스테이지 ${stageNumber}`;
         
@@ -37,7 +62,7 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
         const isPrevStageCompleted = index === 0 || 
           (user.totalExperience >= (region.id - 2) * 100 + index * 50);
         
-        // 스테이지 완료 조건: 해당 구구단 완료 여부
+        // 스테이지 완료 조건: 해당 구구단 완료 여부 (PRD F-1.2: 호환성 보장)
         const isStageCompleted = user.completedTables.includes(region.id);
         
         let status: StageStatus;
@@ -67,13 +92,16 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
 
       return {
         ...region,
-        stages,
+        stages: actualStageCount, // 원래 stages 값을 덮어씀
+        stageList: stages, // 실제 스테이지 배열은 새 필드에 저장
         isUnlocked: isRegionUnlocked,
         completedStages: stages.filter(stage => stage.isCompleted).length,
-        totalBadges: user.completedTables.includes(region.id) ? 1 : 0
+        totalBadges: user.completedTables.includes(region.id) ? 1 : 0,
+        isReduced: useReducedForThisRegion, // 축소 여부 표시
+        originalStageCount: useReducedForThisRegion ? region.stages : actualStageCount
       };
     });
-  }, [user.completedTables, user.totalExperience, selectedStage]);
+  }, [user.completedTables, user.totalExperience, selectedStage, shouldUseReducedStages]);
 
   // PRD [F-1.6] 배지 획득 표시
   const totalBadges = user.completedTables.length;
@@ -81,6 +109,40 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
 
   return (
     <div className="adventure-map w-full max-w-6xl mx-auto p-4">
+      {/* 스테이지 축소 알림 (첫 방문시만) */}
+      {showMigrationNotice && (
+        <motion.div
+          className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-md"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+        >
+          <div className="flex items-start space-x-3">
+            <div className="text-2xl">🎮</div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-blue-800 mb-2">
+                게임이 더욱 재미있어졌어요!
+              </h3>
+              <p className="text-blue-700 text-sm mb-3">
+                각 지역의 핵심 스테이지만 선별하여 더 집중적인 학습이 가능합니다. 
+                기존 진행사항은 모두 안전하게 보존됩니다!
+              </p>
+              <div className="flex justify-between items-center">
+                <div className="text-xs text-blue-600">
+                  • 평균 40-50% 시간 단축 • 핵심 학습에 집중 • 더 큰 성취감
+                </div>
+                <button
+                  onClick={() => setShowMigrationNotice(false)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded hover:bg-blue-100 transition-colors"
+                >
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* 상단 모험 진행도 */}
       <motion.div 
         className="mb-8 text-center"
@@ -135,14 +197,18 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
                   <div className="mt-4">
                     <div className="flex justify-between text-sm mb-2">
                       <span>진행도</span>
-                      <span>{region.completedStages}/{region.stages.length} 스테이지</span>
+                      <span>{region.completedStages}/{region.stageList.length} 스테이지
+                        {region.isReduced && (
+                          <span className="ml-1 text-xs bg-blue-200 text-blue-800 px-1 rounded">최적화</span>
+                        )}
+                      </span>
                     </div>
                     <div className="bg-white/20 rounded-full h-2">
                       <motion.div
                         className="bg-white rounded-full h-2"
                         initial={{ width: 0 }}
                         animate={{ 
-                          width: `${(region.completedStages / region.stages.length) * 100}%` 
+                          width: `${(region.completedStages / region.stageList.length) * 100}%` 
                         }}
                         transition={{ duration: 1, delay: regionIndex * 0.1 }}
                       />
@@ -180,7 +246,7 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
             {/* PRD [F-1.4] 스테이지 경로 - 자연스러운 길 형태 */}
             <div className="stages-path flex-1 max-w-2xl">
               <div className="flex flex-wrap justify-center gap-4 relative">
-                {region.stages.map((stage, stageIndex) => {
+                {region.stageList.map((stage, stageIndex) => {
                   const visualConfig = STAGE_VISUAL_CONFIG[stage.isCompleted ? 
                     STAGE_STATUS.COMPLETED : 
                     stage.isUnlocked ? STAGE_STATUS.AVAILABLE : STAGE_STATUS.LOCKED
@@ -192,7 +258,7 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
                       {stageIndex > 0 && (
                         <div className="flex items-center justify-center">
                           <div className={`w-8 h-1 rounded ${
-                            region.stages[stageIndex - 1].isCompleted ? 'bg-yellow-400' : 'bg-gray-300'
+                            region.stageList[stageIndex - 1].isCompleted ? 'bg-yellow-400' : 'bg-gray-300'
                           }`} />
                           <div className="text-lg mx-1">✨</div>
                           <div className={`w-8 h-1 rounded ${
