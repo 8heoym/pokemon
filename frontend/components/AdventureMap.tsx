@@ -30,6 +30,7 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
   const shouldUseReducedStages = useReducedStages();
   const [showMigrationNotice, setShowMigrationNotice] = useState(false);
 
+
   // 사용자 첫 방문시 마이그레이션 알림 표시 (한 번만)
   useEffect(() => {
     if (shouldUseReducedStages && !localStorage.getItem('migration_notice_shown')) {
@@ -48,6 +49,7 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
       const actualStageCount = useReducedForThisRegion 
         ? StageMigrationUtils.getNewStageCount(region.id)
         : region.stages;
+      
       
       // 템플릿 선택: 축소된 템플릿 또는 기존 템플릿
       const stageNames = useReducedForThisRegion

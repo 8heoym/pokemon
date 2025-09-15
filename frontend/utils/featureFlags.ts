@@ -36,11 +36,21 @@ class FeatureFlagService {
     // 환경변수 기반 설정 (개발전략에서 명시한 대로)
     const phase = (process.env.NEXT_PUBLIC_STAGE_REDUCTION_PHASE as StageMigrationPhase) || StageMigrationPhase.DISABLED;
     
+    // 디버깅: 강제로 FULL 모드 활성화
+    console.log('🚀 FeatureFlag Debug:', {
+      envVar: process.env.NEXT_PUBLIC_STAGE_REDUCTION_PHASE,
+      computed: phase,
+      forceEnabled: true
+    });
+    
+    // 임시로 강제 활성화
+    const forcedPhase = StageMigrationPhase.FULL;
+    
     return {
       reducedStages: {
-        enabled: phase !== StageMigrationPhase.DISABLED,
-        phase,
-        reason: this.getPhaseReason(phase)
+        enabled: forcedPhase !== StageMigrationPhase.DISABLED,
+        phase: forcedPhase,
+        reason: this.getPhaseReason(forcedPhase) + ' (강제 활성화)'
       }
     };
   }
