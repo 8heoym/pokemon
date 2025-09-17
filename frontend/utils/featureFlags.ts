@@ -34,12 +34,19 @@ class FeatureFlagService {
 
   private initializeConfig(): FeatureFlagConfig {
     // 환경변수 기반 설정 (개발전략에서 명시한 대로)
-    const envPhase = process.env.NEXT_PUBLIC_STAGE_REDUCTION_PHASE as StageMigrationPhase;
+    const envVar = process.env.NEXT_PUBLIC_STAGE_REDUCTION_PHASE;
     
-    // 환경변수가 'full'이거나 없을 경우 FULL로 설정 (기본 활성화)
-    const phase = envPhase === 'full' || envPhase === StageMigrationPhase.FULL 
-      ? StageMigrationPhase.FULL 
-      : envPhase || StageMigrationPhase.FULL; // 기본값을 FULL로 설정
+    // 환경변수에 따른 phase 결정 (기본값: FULL로 활성화)
+    let phase: StageMigrationPhase;
+    
+    if (envVar === 'disabled') {
+      phase = StageMigrationPhase.DISABLED;
+    } else if (envVar === 'beta') {
+      phase = StageMigrationPhase.BETA;
+    } else {
+      // 'full' 또는 undefined/null인 경우 모두 FULL로 설정
+      phase = StageMigrationPhase.FULL;
+    }
     
     return {
       reducedStages: {
