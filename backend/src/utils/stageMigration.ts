@@ -15,6 +15,14 @@ export interface StageMigrationConfig {
 // 프론트엔드와 동일한 매핑 설정
 export const STAGE_MIGRATION_CONFIG: StageMigrationConfig[] = [
   {
+    regionId: 2, // 피카츄의 풀숲 (5개 → 3개)
+    oldStageCount: 5,
+    newStageCount: 3,
+    selectedStages: [1, 3, 5],
+    stageMapping: { 1: 1, 2: 1, 3: 2, 4: 3, 5: 3 },
+    reason: "사용자 피로도 감소를 위한 핵심 스테이지 선별"
+  },
+  {
     regionId: 3, // 꼬부기의 연못 (6개 → 3개)
     oldStageCount: 6,
     newStageCount: 3,

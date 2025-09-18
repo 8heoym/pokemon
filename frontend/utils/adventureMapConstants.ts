@@ -200,6 +200,11 @@ export const STAGE_NAME_TEMPLATES: Record<number, string[]> = {
 
 // 스테이지 축소를 위한 선별된 이름 템플릿 (PRD F-1.3 기준)
 export const REDUCED_STAGE_NAME_TEMPLATES: Record<number, string[]> = {
+  2: [ // 5개 → 3개 (1, 3, 5번째 선별)
+    "피카츄의 전기 충전",        // 기존 1번째
+    "라이츄의 천둥번개",         // 기존 3번째  
+    "제라오라의 플라즈마 펀치"   // 기존 5번째
+  ],
   3: [ // 6개 → 3개 (1, 3, 6번째 선별)
     "꼬부기의 물방울 모으기",    // 기존 1번째
     "거북왕의 파도타기",         // 기존 3번째  
