@@ -258,6 +258,11 @@ export class HybridProblemService {
     pokemonCaught?: any;
     experienceGained: number;
     feedback: string;
+    stageProgress?: {
+      completedProblems: number;
+      totalProblems: number;
+      isCompleted: boolean;
+    };
   }> {
     try {
       // 1. 세션에서 문제 조회
@@ -300,9 +305,10 @@ export class HybridProblemService {
       });
 
       // 🚀 성능 최적화: 답안 기록과 세션 완료 처리 병렬 실행
+      // ✅ 정답일 때만 세션 완료 처리하여 재시도 가능하도록 개선
       await Promise.all([
         this.recordAnswer(userId, problemInstance, userAnswer, timeSpent, hintsUsed, isCorrect),
-        this.templateService.markProblemAnswered(problemId, userId)
+        isCorrect ? this.templateService.markProblemAnswered(problemId, userId) : Promise.resolve()
       ]);
 
       // 5. 포켓몬 잡기 및 경험치 (기존 로직 사용)
