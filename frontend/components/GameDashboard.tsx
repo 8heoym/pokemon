@@ -96,7 +96,9 @@ export default function GameDashboard({
       currentProblem.id,
       userAnswer,
       timeSpent,
-      hintsUsed
+      hintsUsed,
+      selectedStage?.regionId,
+      selectedStage?.stageNumber
     );
     
     if (result) {

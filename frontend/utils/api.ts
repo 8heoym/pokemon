@@ -113,8 +113,8 @@ export const problemAPI = {
   generate: (userId: string, multiplicationTable: number, difficulty: 1 | 2 | 3 = 1) =>
     api.post('/problems/generate', { userId, multiplicationTable, difficulty }),
 
-  submit: (userId: string, problemId: string, userAnswer: number, timeSpent: number, hintsUsed: number = 0) =>
-    api.post('/problems/submit', { userId, problemId, answer: userAnswer, timeSpent, hintsUsed }),
+  submit: (userId: string, problemId: string, userAnswer: number, timeSpent: number, hintsUsed: number = 0, regionId?: number, stageNumber?: number) =>
+    api.post('/problems/submit', { userId, problemId, answer: userAnswer, timeSpent, hintsUsed, regionId, stageNumber }),
 
   getHint: (problemId: string, userId: string) => {
     const encodedUserId = encodeURIComponent(userId);
@@ -217,6 +217,57 @@ export const sessionAPI = {
   
   performanceTest: () => 
     api.get('/session/test'),
+};
+
+// 🎯 스테이지 진행도 관련 API
+export const stageProgressAPI = {
+  // 사용자의 모든 스테이지 진행도 조회
+  getUserStageProgress: (userId: string) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.get(`/users/${encodedUserId}/stage-progress`);
+  },
+
+  // 특정 지역의 스테이지 진행도 조회
+  getRegionStageProgress: (userId: string, regionId: number) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.get(`/users/${encodedUserId}/stage-progress/region/${regionId}`);
+  },
+
+  // 스테이지 진행도 업데이트
+  updateStageProgress: (userId: string, data: { regionId: number; stageNumber: number; completedProblems: number }) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.post(`/users/${encodedUserId}/stage-progress/update`, data);
+  },
+
+  // 신규 사용자 스테이지 진행도 초기화
+  initializeStageProgress: (userId: string) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.post(`/users/${encodedUserId}/stage-progress/initialize`);
+  },
+
+  // 완료된 지역 목록 조회
+  getCompletedRegions: (userId: string) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.get(`/users/${encodedUserId}/completed-regions`);
+  },
+
+  // 특정 지역 완료 여부 확인
+  checkRegionCompletion: (userId: string, regionId: number) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.get(`/users/${encodedUserId}/stage-progress/region/${regionId}/completion`);
+  },
+
+  // Phase 2: 스테이지 기반 지역 상태 조회
+  getRegionStatus: (userId: string) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.get(`/users/${encodedUserId}/region-status`);
+  },
+
+  // Phase 2: 전체 게임 진행 상태 조회 (배지 시스템용)
+  getGameProgress: (userId: string) => {
+    const encodedUserId = encodeURIComponent(userId);
+    return api.get(`/users/${encodedUserId}/game-progress`);
+  },
 };
 
 export default api;

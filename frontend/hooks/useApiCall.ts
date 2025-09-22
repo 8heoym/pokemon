@@ -103,11 +103,13 @@ export function useProblems() {
     problemId: string,
     userAnswer: number,
     timeSpent: number,
-    hintsUsed: number = 0
+    hintsUsed: number = 0,
+    regionId?: number,
+    stageNumber?: number
   ) => {
     return await execute(async () => {
       const { problemAPI } = await import('@/utils/api');
-      const response = await problemAPI.submit(userId, problemId, userAnswer, timeSpent, hintsUsed);
+      const response = await problemAPI.submit(userId, problemId, userAnswer, timeSpent, hintsUsed, regionId, stageNumber);
       return response.data;
     });
   }, [execute]);
