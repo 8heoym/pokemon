@@ -2,16 +2,19 @@ import { Request, Response } from 'express';
 import { HybridProblemService } from '../services/HybridProblemService';
 import { ProblemTemplateService } from '../services/ProblemTemplateService';
 import { SupabaseGameService } from '../services/SupabaseGameService';
+import { StageProgressService } from '../services/StageProgressService';
 
 export class SimpleProblemController {
   private hybridService: HybridProblemService;
   private templateService: ProblemTemplateService;
   private gameService: SupabaseGameService;
+  private stageProgressService: StageProgressService;
 
   constructor() {
     this.hybridService = new HybridProblemService();
     this.templateService = new ProblemTemplateService();
     this.gameService = new SupabaseGameService();
+    this.stageProgressService = new StageProgressService();
   }
 
   async generateProblem(req: Request, res: Response) {
@@ -49,7 +52,7 @@ export class SimpleProblemController {
 
   async submitAnswer(req: Request, res: Response) {
     try {
-      const { userId, problemId, answer, timeSpent = 0, hintsUsed = 0 } = req.body;
+      const { userId, problemId, answer, timeSpent = 0, hintsUsed = 0, regionId, stageNumber } = req.body;
 
       if (!userId || !problemId || answer === undefined) {
         return res.status(400).json({ 
@@ -78,6 +81,50 @@ export class SimpleProblemController {
         } catch (catchError) {
           // 포켓몬 잡기 실패는 치명적이지 않으므로 로그만 남기고 계속 진행
           console.warn('포켓몬 잡기 실패 (답변 처리는 계속):', catchError);
+        }
+
+        // 스테이지 진행도 업데이트 (정답일 경우에만)
+        if (regionId && stageNumber) {
+          try {
+            // 현재 스테이지 진행도 조회
+            const currentProgress = await this.stageProgressService.getRegionStageProgress(userId, regionId);
+            const stageProgress = currentProgress.find(s => s.stageNumber === stageNumber);
+            
+            if (stageProgress) {
+              // 기존 진행도에서 1 증가
+              const newCompletedProblems = Math.min(stageProgress.completedProblems + 1, 5);
+              
+              await this.stageProgressService.updateStageProgress({
+                userId,
+                regionId,
+                stageNumber,
+                completedProblems: newCompletedProblems
+              });
+
+              (result as any).stageProgress = {
+                completedProblems: newCompletedProblems,
+                totalProblems: 5,
+                isCompleted: newCompletedProblems >= 4
+              };
+            } else {
+              // 스테이지 진행도가 없으면 1로 초기화
+              await this.stageProgressService.updateStageProgress({
+                userId,
+                regionId,
+                stageNumber,
+                completedProblems: 1
+              });
+
+              (result as any).stageProgress = {
+                completedProblems: 1,
+                totalProblems: 5,
+                isCompleted: false
+              };
+            }
+          } catch (stageError) {
+            // 스테이지 진행도 업데이트 실패는 치명적이지 않으므로 로그만 남기고 계속 진행
+            console.warn('스테이지 진행도 업데이트 실패 (답변 처리는 계속):', stageError);
+          }
         }
       }
 

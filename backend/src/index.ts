@@ -14,6 +14,8 @@ import { TemplateSystemInitializer } from './utils/initializeTemplateSystem';
 import { SchemaFixController } from './controllers/SchemaFixController';
 import { CompatibilityMotivationController } from './controllers/CompatibilityMotivationController';
 import { StageMigrationController } from './controllers/StageMigrationController';
+import { StageProgressController } from './controllers/StageProgressController';
+import { DatabaseSetupController } from './controllers/DatabaseSetupController';
 
 // 환경변수 로드
 dotenv.config();
@@ -37,6 +39,8 @@ const templateInitializer = new TemplateSystemInitializer();
 const schemaFixController = new SchemaFixController();
 const compatibilityController = new CompatibilityMotivationController();
 const stageMigrationController = new StageMigrationController();
+const stageProgressController = new StageProgressController();
+const databaseSetupController = new DatabaseSetupController();
 
 // 기본 라우트
 app.get('/', (req, res) => {
@@ -308,6 +312,22 @@ app.get('/api/users/:userId/pokedex/paginated', (req, res) => gameController.get
 app.get('/api/users/:userId/stats', (req, res) => gameController.getUserStats(req, res));
 app.get('/api/leaderboard', (req, res) => gameController.getLeaderboard(req, res));
 app.post('/api/pokemon/batch', (req, res) => gameController.getPokemonByIds(req, res));
+
+// 스테이지 진행도 관련 API
+app.get('/api/users/:userId/stage-progress', (req, res) => stageProgressController.getUserStageProgress(req, res));
+app.get('/api/users/:userId/stage-progress/region/:regionId', (req, res) => stageProgressController.getRegionStageProgress(req, res));
+app.post('/api/users/:userId/stage-progress/update', (req, res) => stageProgressController.updateStageProgress(req, res));
+app.post('/api/users/:userId/stage-progress/initialize', (req, res) => stageProgressController.initializeStageProgress(req, res));
+app.get('/api/users/:userId/completed-regions', (req, res) => stageProgressController.getCompletedRegions(req, res));
+app.get('/api/users/:userId/stage-progress/region/:regionId/completion', (req, res) => stageProgressController.checkRegionCompletion(req, res));
+
+// Phase 2: 스테이지 기반 지역 상태 관련 API
+app.get('/api/users/:userId/region-status', (req, res) => stageProgressController.getRegionStatus(req, res));
+app.get('/api/users/:userId/game-progress', (req, res) => stageProgressController.getGameProgress(req, res));
+
+// 데이터베이스 설정 관련 API
+app.post('/api/database/create-stage-progress-table', (req, res) => databaseSetupController.createStageProgressTable(req, res));
+app.get('/api/database/test-stage-progress-table', (req, res) => databaseSetupController.testStageProgressTable(req, res));
 
 // 성능 최적화 관련 API 라우트
 app.post('/api/performance/optimize', (req, res) => performanceController.applyOptimizations(req, res));
