@@ -143,3 +143,23 @@ export interface ShopItem {
   available: boolean;
   purchasedAt?: Date;
 }
+
+// Stage Progress System Types
+export interface StageProgress {
+  id: string;
+  userId: string;
+  regionId: number;
+  stageNumber: number;
+  completedProblems: number;
+  totalProblems: number;
+  isCompleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface StageProgressUpdate {
+  userId: string;
+  regionId: number;
+  stageNumber: number;
+  completedProblems: number;
+}

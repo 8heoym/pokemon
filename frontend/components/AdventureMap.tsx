@@ -2,7 +2,7 @@
 
 import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User } from '@/types';
+import { User, StageProgress } from '@/types';
 import { 
   ADVENTURE_REGIONS, 
   STAGE_NAME_TEMPLATES, 
@@ -14,6 +14,15 @@ import {
 } from '@/utils/adventureMapConstants';
 import { StageMigrationUtils } from '@/utils/stageMigration';
 import { useReducedStages } from '@/utils/featureFlags';
+import { stageProgressAPI } from '@/utils/api';
+
+// Phase 2: 지역 상태 타입 정의
+interface RegionStatus {
+  regionId: number;
+  isUnlocked: boolean;
+  isCompleted: boolean;
+  completionRate: number;
+}
 
 interface AdventureMapProps {
   user: User;
@@ -29,7 +38,74 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
   // Feature Flag 상태
   const shouldUseReducedStages = useReducedStages();
   const [showMigrationNotice, setShowMigrationNotice] = useState(false);
+  
+  // 실제 스테이지 진행도 상태
+  const [stageProgressData, setStageProgressData] = useState<StageProgress[]>([]);
+  const [isLoadingProgress, setIsLoadingProgress] = useState(true);
+  
+  // Phase 2: 지역 상태 데이터
+  const [regionStatusData, setRegionStatusData] = useState<RegionStatus[]>([]);
+  const [isLoadingRegionStatus, setIsLoadingRegionStatus] = useState(true);
 
+
+  // 실제 스테이지 진행도 데이터 로드
+  useEffect(() => {
+    const loadStageProgress = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setIsLoadingProgress(true);
+        const response = await stageProgressAPI.getUserStageProgress(user.id);
+        
+        if (response.data.success) {
+          setStageProgressData(response.data.data);
+        } else {
+          // 스테이지 진행도가 없으면 초기화
+          await stageProgressAPI.initializeStageProgress(user.id);
+          const retryResponse = await stageProgressAPI.getUserStageProgress(user.id);
+          if (retryResponse.data.success) {
+            setStageProgressData(retryResponse.data.data);
+          }
+        }
+      } catch (error) {
+        console.error('스테이지 진행도 로드 실패:', error);
+        // 실패시 빈 배열로 설정하여 기존 로직 사용
+        setStageProgressData([]);
+      } finally {
+        setIsLoadingProgress(false);
+      }
+    };
+
+    loadStageProgress();
+  }, [user?.id]);
+
+  // Phase 2: 지역 상태 데이터 로드
+  useEffect(() => {
+    const loadRegionStatus = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setIsLoadingRegionStatus(true);
+        const response = await stageProgressAPI.getRegionStatus(user.id);
+        
+        if (response.data.success) {
+          setRegionStatusData(response.data.data.regionStatuses);
+        } else {
+          console.warn('지역 상태 조회 실패:', response.data);
+          // 실패시 빈 배열로 설정하여 기존 로직 사용
+          setRegionStatusData([]);
+        }
+      } catch (error) {
+        console.error('지역 상태 로드 실패:', error);
+        // 실패시 빈 배열로 설정하여 기존 로직 사용
+        setRegionStatusData([]);
+      } finally {
+        setIsLoadingRegionStatus(false);
+      }
+    };
+
+    loadRegionStatus();
+  }, [user?.id, stageProgressData]); // stageProgressData 변경시에도 다시 로드
 
   // 사용자 첫 방문시 마이그레이션 알림 표시 (한 번만)
   useEffect(() => {
@@ -39,17 +115,32 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
     }
   }, [shouldUseReducedStages]);
 
-  // PRD [F-1.4] 스테이지 축소 적용된 진행 시스템 구현
+  // PRD [F-1.4] 스테이지 축소 적용된 진행 시스템 구현 (Phase 2: 지역 상태 기반)
   const stageData = useMemo(() => {
+    if (isLoadingProgress || isLoadingRegionStatus) {
+      // 로딩 중일 때는 빈 데이터 반환
+      return ADVENTURE_REGIONS.map(region => ({
+        ...region,
+        stageList: [],
+        isUnlocked: false,
+        completedStages: 0,
+        totalBadges: 0,
+        isReduced: false,
+        originalStageCount: region.stages
+      }));
+    }
+
     return ADVENTURE_REGIONS.map(region => {
-      const isRegionUnlocked = user.completedTables.length >= Math.floor((region.id - 2) * 0.5);
+      // Phase 2: 지역 상태 데이터에서 해금/완료 정보 가져오기
+      const regionStatus = regionStatusData.find(r => r.regionId === region.id);
+      const isRegionUnlocked = regionStatus ? regionStatus.isUnlocked : (region.id === 2); // fallback: Region 2만 해금
+      const isRegionCompletedByAPI = regionStatus ? regionStatus.isCompleted : false;
       
       // 스테이지 축소 적용 여부 결정
       const useReducedForThisRegion = shouldUseReducedStages && StageMigrationUtils.isRegionAffected(region.id);
       const actualStageCount = useReducedForThisRegion 
         ? StageMigrationUtils.getNewStageCount(region.id)
         : region.stages;
-      
       
       // 템플릿 선택: 축소된 템플릿 또는 기존 템플릿
       const stageNames = useReducedForThisRegion
@@ -60,12 +151,22 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
         const stageNumber = index + 1;
         const stageName = stageNames[index] || `${region.name} 스테이지 ${stageNumber}`;
         
+        // 실제 DB에서 스테이지 진행도 찾기
+        const stageProgress = stageProgressData.find(
+          p => p.regionId === region.id && p.stageNumber === stageNumber
+        );
+        
+        // 실제 완료 문제 수 (DB에서 가져온 값 또는 0)
+        const completedProblems = stageProgress?.completedProblems || 0;
+        const isStageCompleted = stageProgress?.isCompleted || false;
+        
         // 스테이지 해금 조건: 이전 스테이지 완료 또는 첫 번째 스테이지
         const isPrevStageCompleted = index === 0 || 
-          (user.totalExperience >= (region.id - 2) * 100 + index * 50);
-        
-        // 스테이지 완료 조건: 해당 구구단 완료 여부 (PRD F-1.2: 호환성 보장)
-        const isStageCompleted = user.completedTables.includes(region.id);
+          stageProgressData.some(p => 
+            p.regionId === region.id && 
+            p.stageNumber === stageNumber - 1 && 
+            p.isCompleted
+          );
         
         let status: StageStatus;
         if (!isRegionUnlocked || !isPrevStageCompleted) {
@@ -88,25 +189,31 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
           requiredProblems: 4, // 완료 필요 문제 수
           isUnlocked: isRegionUnlocked && isPrevStageCompleted,
           isCompleted: isStageCompleted,
-          completedProblems: isStageCompleted ? 5 : 0
+          completedProblems: completedProblems
         };
       });
+
+      // 완료된 스테이지 수 계산
+      const completedStagesCount = stages.filter(stage => stage.isCompleted).length;
+      
+      // 지역 완료 여부: 모든 스테이지가 완료되었는지 확인
+      const isRegionCompleted = completedStagesCount === actualStageCount;
 
       return {
         ...region,
         stages: actualStageCount, // 원래 stages 값을 덮어씀
         stageList: stages, // 실제 스테이지 배열은 새 필드에 저장
         isUnlocked: isRegionUnlocked,
-        completedStages: stages.filter(stage => stage.isCompleted).length,
-        totalBadges: user.completedTables.includes(region.id) ? 1 : 0,
+        completedStages: completedStagesCount,
+        totalBadges: (isRegionCompletedByAPI || isRegionCompleted) ? 1 : 0,
         isReduced: useReducedForThisRegion, // 축소 여부 표시
         originalStageCount: useReducedForThisRegion ? region.stages : actualStageCount
       };
     });
-  }, [user.completedTables, user.totalExperience, selectedStage, shouldUseReducedStages]);
+  }, [user.totalExperience, selectedStage, shouldUseReducedStages, stageProgressData, regionStatusData, isLoadingProgress, isLoadingRegionStatus]);
 
-  // PRD [F-1.6] 배지 획득 표시
-  const totalBadges = user.completedTables.length;
+  // PRD [F-1.6] 배지 획득 표시 - 실제 스테이지 완료 기반
+  const totalBadges = stageData.reduce((count, region) => count + region.totalBadges, 0);
   const availableRegions = stageData.filter(region => region.isUnlocked).length;
 
   return (
