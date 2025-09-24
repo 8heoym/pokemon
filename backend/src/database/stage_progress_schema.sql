@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS stage_progress (
     stage_number INTEGER NOT NULL CHECK (stage_number >= 1),
     completed_problems INTEGER DEFAULT 0 CHECK (completed_problems >= 0 AND completed_problems <= 5),
     total_problems INTEGER DEFAULT 5 CHECK (total_problems > 0),
-    is_completed BOOLEAN GENERATED ALWAYS AS (completed_problems >= 4) STORED,
+    is_completed BOOLEAN GENERATED ALWAYS AS (completed_problems >= 5) STORED,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     

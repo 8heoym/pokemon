@@ -104,7 +104,7 @@ export class SimpleProblemController {
               (result as any).stageProgress = {
                 completedProblems: newCompletedProblems,
                 totalProblems: 5,
-                isCompleted: newCompletedProblems >= 4
+                isCompleted: newCompletedProblems >= 5
               };
             } else {
               // 스테이지 진행도가 없으면 1로 초기화

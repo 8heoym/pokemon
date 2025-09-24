@@ -186,7 +186,7 @@ const AdventureMap: React.FC<AdventureMapProps> = ({
           name: stageName,
           description: `${region.description} - ${stageName}`,
           problemCount: 5, // 기본 문제 수
-          requiredProblems: 4, // 완료 필요 문제 수
+          requiredProblems: 5, // 완료 필요 문제 수
           isUnlocked: isRegionUnlocked && isPrevStageCompleted,
           isCompleted: isStageCompleted,
           completedProblems: completedProblems
