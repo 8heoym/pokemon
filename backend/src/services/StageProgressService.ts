@@ -93,7 +93,106 @@ export class StageProgressService {
       result = data;
     }
 
-    return this.mapToStageProgress([result])[0];
+    const updatedProgress = this.mapToStageProgress([result])[0];
+
+    // 스테이지 완료시 다음 스테이지 자동 생성
+    if (updatedProgress.isCompleted) {
+      await this.unlockNextStage(userId, regionId, stageNumber);
+    }
+
+    return updatedProgress;
+  }
+
+  /**
+   * 다음 스테이지 자동 해금 (스테이지 완료시 호출)
+   */
+  private async unlockNextStage(userId: string, regionId: number, completedStageNumber: number): Promise<void> {
+    try {
+      const nextStageNumber = completedStageNumber + 1;
+      const expectedStageCount = StageMigrationUtils.getNewStageCount(regionId);
+
+      // 다음 스테이지가 이 지역의 마지막 스테이지를 초과하는지 확인
+      if (nextStageNumber > expectedStageCount) {
+        console.log(`Region ${regionId} completed. Unlocking next region...`);
+        await this.unlockNextRegion(userId, regionId);
+        return;
+      }
+
+      // 다음 스테이지가 이미 존재하는지 확인
+      const { data: existing } = await supabase
+        .from('stage_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('region_id', regionId)
+        .eq('stage_number', nextStageNumber)
+        .single();
+
+      if (!existing) {
+        // 다음 스테이지 레코드 생성 (자동 해금)
+        const { error } = await supabase
+          .from('stage_progress')
+          .insert({
+            user_id: userId,
+            region_id: regionId,
+            stage_number: nextStageNumber,
+            completed_problems: 0,
+            total_problems: 5
+          });
+
+        if (error) {
+          console.error('Failed to unlock next stage:', error);
+        } else {
+          console.log(`✅ Stage ${nextStageNumber} in Region ${regionId} unlocked for user ${userId}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error in unlockNextStage:', error);
+    }
+  }
+
+  /**
+   * 다음 지역 자동 해금 (지역 완료시 호출)
+   */
+  private async unlockNextRegion(userId: string, completedRegionId: number): Promise<void> {
+    try {
+      const nextRegionId = completedRegionId + 1;
+
+      // 다음 지역이 유효한지 확인 (Region 2-9)
+      if (nextRegionId > 9) {
+        console.log('All regions completed! 🎉');
+        return;
+      }
+
+      // 다음 지역의 첫 번째 스테이지가 이미 존재하는지 확인
+      const { data: existing } = await supabase
+        .from('stage_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('region_id', nextRegionId)
+        .eq('stage_number', 1)
+        .single();
+
+      if (!existing) {
+        // 다음 지역의 첫 번째 스테이지 생성 (자동 해금)
+        const { error } = await supabase
+          .from('stage_progress')
+          .insert({
+            user_id: userId,
+            region_id: nextRegionId,
+            stage_number: 1,
+            completed_problems: 0,
+            total_problems: 5
+          });
+
+        if (error) {
+          console.error('Failed to unlock next region:', error);
+        } else {
+          console.log(`✅ Region ${nextRegionId} unlocked for user ${userId}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error in unlockNextRegion:', error);
+    }
   }
 
   /**

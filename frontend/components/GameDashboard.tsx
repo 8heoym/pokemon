@@ -100,13 +100,13 @@ export default function GameDashboard({
       selectedStage?.regionId,
       selectedStage?.stageNumber
     );
-    
+
     if (result) {
       // Phase 2: 정답 시 별의모래 및 스트릭 업데이트
       if (result.isCorrect) {
         // Phase 2.3: 개선된 별의모래 계산 시스템
         const regionNumber = selectedStage?.regionId || 2;
-        const difficulty = currentProblem?.difficulty === 3 ? 'hard' : 
+        const difficulty = currentProblem?.difficulty === 3 ? 'hard' :
                           currentProblem?.difficulty === 2 ? 'normal' : 'easy';
         const starDustEarned = calculateStarDustReward(
           10, // 기본 보상
@@ -116,7 +116,7 @@ export default function GameDashboard({
           regionNumber
         );
         setRecentStarDust(starDustEarned);
-        
+
         // 🚀 최적화: API 호출을 배치로 통합하여 성능 향상
         try {
           // 두 API 호출을 병렬로 실행
@@ -138,10 +138,15 @@ export default function GameDashboard({
           console.error('Motivation system update failed:', error);
         }
       }
-      
-      // 사용자 데이터 새로고침
+
+      // 사용자 데이터 새로고침 (스테이지 진행도 포함)
       await refreshUserData();
-      
+
+      // 스테이지 완료시 축하 메시지
+      if (result.isCorrect && (result as any).stageProgress?.isCompleted) {
+        console.log('🎉 Stage completed! Stage progress:', (result as any).stageProgress);
+      }
+
       // 정답이고 포켓몬을 잡았다면 축하 효과
       if (result.isCorrect && result.pokemonCaught?.success) {
         setShowConfetti(true);
@@ -151,10 +156,10 @@ export default function GameDashboard({
         }
         confettiTimerRef.current = setTimeout(() => setShowConfetti(false), 5000);
       }
-      
+
       return result;
     }
-    
+
     // 에러 처리는 useApiCall 훅에서 자동으로 수행됨
     return null;
   };

@@ -86,44 +86,44 @@ export class SimpleProblemController {
         // 스테이지 진행도 업데이트 (정답일 경우에만)
         if (regionId && stageNumber) {
           try {
+            console.log(`📊 Updating stage progress: User ${userId}, Region ${regionId}, Stage ${stageNumber}`);
+
             // 현재 스테이지 진행도 조회
             const currentProgress = await this.stageProgressService.getRegionStageProgress(userId, regionId);
             const stageProgress = currentProgress.find(s => s.stageNumber === stageNumber);
-            
+
+            let newCompletedProblems = 1;
+
             if (stageProgress) {
               // 기존 진행도에서 1 증가
-              const newCompletedProblems = Math.min(stageProgress.completedProblems + 1, 5);
-              
-              await this.stageProgressService.updateStageProgress({
-                userId,
-                regionId,
-                stageNumber,
-                completedProblems: newCompletedProblems
-              });
-
-              (result as any).stageProgress = {
-                completedProblems: newCompletedProblems,
-                totalProblems: 5,
-                isCompleted: newCompletedProblems >= 5
-              };
+              newCompletedProblems = Math.min(stageProgress.completedProblems + 1, 5);
+              console.log(`Current progress: ${stageProgress.completedProblems}/5, New: ${newCompletedProblems}/5`);
             } else {
-              // 스테이지 진행도가 없으면 1로 초기화
-              await this.stageProgressService.updateStageProgress({
-                userId,
-                regionId,
-                stageNumber,
-                completedProblems: 1
-              });
-
-              (result as any).stageProgress = {
-                completedProblems: 1,
-                totalProblems: 5,
-                isCompleted: false
-              };
+              console.log('No existing progress found, starting at 1/5');
             }
+
+            // 스테이지 진행도 업데이트 (자동 해금 로직 포함)
+            const updatedProgress = await this.stageProgressService.updateStageProgress({
+              userId,
+              regionId,
+              stageNumber,
+              completedProblems: newCompletedProblems
+            });
+
+            (result as any).stageProgress = {
+              completedProblems: updatedProgress.completedProblems,
+              totalProblems: 5,
+              isCompleted: updatedProgress.isCompleted,
+              stageUnlocked: updatedProgress.isCompleted ? `Stage ${stageNumber + 1}` : null,
+              regionUnlocked: null
+            };
+
+            console.log(`✅ Stage progress updated successfully. Completed: ${updatedProgress.isCompleted}`);
+
           } catch (stageError) {
-            // 스테이지 진행도 업데이트 실패는 치명적이지 않으므로 로그만 남기고 계속 진행
-            console.warn('스테이지 진행도 업데이트 실패 (답변 처리는 계속):', stageError);
+            // 스테이지 진행도 업데이트 실패시 명확히 로그
+            console.error('❌ 스테이지 진행도 업데이트 실패:', stageError);
+            (result as any).stageProgressError = stageError instanceof Error ? stageError.message : 'Unknown error';
           }
         }
       }
